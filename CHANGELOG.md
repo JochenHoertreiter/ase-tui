@@ -1,6 +1,8 @@
 
 # ChangeLog
 
+## 0.0.3 (2026-05-27)
+
 ## 0.0.2 (2026-05-27)
 
 -   FEATURE:     add dynamic global hint bar via `onHint` callback in `ase-tui`/`TaskScreen`
