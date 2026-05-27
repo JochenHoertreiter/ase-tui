@@ -88,13 +88,28 @@ const TaskScreen = ({ escBlockedRef, onHint }) => {
     /*  delegate focus/mode-dependent hint text to the master hint bar  */
     useEffect(() => {
         if (mode === "rename")
-            onHint("Enter=OK  ESC=cancel");
+            onHint([
+                { key: "⏎", desc: "OK" },
+                { key: "ESC", desc: "cancel" }
+            ]);
         else if (focus === "tasks")
-            onHint("↑ ↓ navigate tasks  ⏎ select task  P preview");
+            onHint([
+                { key: "↑ ↓", desc: "navigate tasks" },
+                { key: "⏎", desc: "select task" },
+                { key: "P", desc: "preview" }
+            ]);
         else if (focus === "actions")
-            onHint("↑ ↓ navigate actions  ⏎ execute action  P preview  ESC back");
+            onHint([
+                { key: "↑ ↓", desc: "navigate actions" },
+                { key: "⏎", desc: "execute action" },
+                { key: "P", desc: "preview" },
+                { key: "ESC", desc: "back" }
+            ]);
         else if (focus === "preview")
-            onHint("↑ ↓ / PgUp/PgDn scroll preview  ESC back");
+            onHint([
+                { key: "↑ ↓ / PgUp/PgDn", desc: "scroll preview" },
+                { key: "ESC", desc: "back" }
+            ]);
     }, [focus, mode, onHint]);
     /*  execute the currently highlighted action  */
     const executeAction = async (item) => {

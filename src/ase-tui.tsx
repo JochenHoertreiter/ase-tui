@@ -16,6 +16,8 @@ import SetupScreen         from "./screens/SetupScreen.js"
 import MCPScreen           from "./screens/MCPScreen.js"
 import { HEADER_LINES }    from "./screens/Screen.js"
 
+export type HintSegment = { key: string, desc: string }
+
 type Screen = "config" | "service" | "task" | "setup" | "mcp"
 
 /* tab border styles */
@@ -40,7 +42,10 @@ const tabs: Array<{ label: string, value: Screen }> = [
 
 
 const TITLE = "⧉ ASE — Agentic Software Engineering - Terminal User Interface (tui)"
-const BASE_HINT = "◀ ▶ navigate tabs   Q quit"
+const BASE_HINT: HintSegment[] = [
+    { key: "◀ ▶", desc: "navigate tabs" },
+    { key: "Q",   desc: "quit"          }
+]
 
 const App = () => {
     const { exit }      = useApp()
@@ -104,13 +109,19 @@ const App = () => {
             <Box height={contentH}>
                 {screen === "config"  && <ConfigScreen />}
                 {screen === "service" && <ServiceScreen />}
-                {screen === "task"    && <TaskScreen escBlockedRef={escBlockedRef} onHint={(s) => setHint(s ? `${s}   ${BASE_HINT}` : BASE_HINT)} />}
+                {screen === "task"    && <TaskScreen escBlockedRef={escBlockedRef} onHint={(s) => setHint(s ? [ ...s, ...BASE_HINT ] : BASE_HINT)} />}
                 {screen === "setup"   && <SetupScreen />}
                 {screen === "mcp"     && <MCPScreen />}
             </Box>
             <Box position='absolute' bottom={0} right={1} width={termW}>
                 <Box flexGrow={1} />
-                <Text bold color='cyan'>{cliTruncate(hint, innerW)}</Text>
+                {hint.map((s, i) =>
+                    <Text key={i}>
+                        <Text bold color='cyan'>{s.key}</Text>
+                        <Text color='white'> {s.desc}</Text>
+                        {i < hint.length - 1 ? <Text color='gray'>   </Text> : null}
+                    </Text>
+                )}
             </Box>
         </Box>
     )

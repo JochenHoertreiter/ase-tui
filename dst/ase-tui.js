@@ -32,7 +32,10 @@ const tabs = [
     { label: "MCP", value: "mcp" }
 ];
 const TITLE = "⧉ ASE — Agentic Software Engineering - Terminal User Interface (tui)";
-const BASE_HINT = "◀ ▶ navigate tabs   Q quit";
+const BASE_HINT = [
+    { key: "◀ ▶", desc: "navigate tabs" },
+    { key: "Q", desc: "quit" }
+];
 const App = () => {
     const { exit } = useApp();
     const { stdout } = useStdout();
@@ -67,6 +70,6 @@ const App = () => {
     const restW = Math.max(0, termW - tabsWidth - 1);
     return (_jsxs(Box, { flexDirection: 'column', width: termW, height: termH, children: [_jsx(Box, { paddingLeft: 1, children: _jsx(Text, { bold: true, color: 'cyan', children: cliTruncate(TITLE, innerW) }) }), _jsxs(Box, { flexDirection: 'row', paddingLeft: 1, children: [tabs.map((t, i) => i === tab ?
                         _jsx(Box, { borderStyle: BORDER_ACTIVE, borderColor: 'gray', paddingLeft: 1, paddingRight: 1, children: _jsx(Text, { color: 'cyan', children: t.label }) }, t.value) :
-                        _jsx(Box, { borderStyle: BORDER_INACTIVE, borderColor: 'gray', paddingLeft: 1, paddingRight: 1, children: _jsx(Text, { color: 'gray', children: t.label }) }, t.value)), _jsx(Box, { alignSelf: 'flex-end', children: _jsx(Text, { color: 'gray', children: "─".repeat(restW) }) })] }), _jsxs(Box, { height: contentH, children: [screen === "config" && _jsx(ConfigScreen, {}), screen === "service" && _jsx(ServiceScreen, {}), screen === "task" && _jsx(TaskScreen, { escBlockedRef: escBlockedRef, onHint: (s) => setHint(s ? `${s}   ${BASE_HINT}` : BASE_HINT) }), screen === "setup" && _jsx(SetupScreen, {}), screen === "mcp" && _jsx(MCPScreen, {})] }), _jsxs(Box, { position: 'absolute', bottom: 0, right: 1, width: termW, children: [_jsx(Box, { flexGrow: 1 }), _jsx(Text, { bold: true, color: 'cyan', children: cliTruncate(hint, innerW) })] })] }));
+                        _jsx(Box, { borderStyle: BORDER_INACTIVE, borderColor: 'gray', paddingLeft: 1, paddingRight: 1, children: _jsx(Text, { color: 'gray', children: t.label }) }, t.value)), _jsx(Box, { alignSelf: 'flex-end', children: _jsx(Text, { color: 'gray', children: "─".repeat(restW) }) })] }), _jsxs(Box, { height: contentH, children: [screen === "config" && _jsx(ConfigScreen, {}), screen === "service" && _jsx(ServiceScreen, {}), screen === "task" && _jsx(TaskScreen, { escBlockedRef: escBlockedRef, onHint: (s) => setHint(s ? [...s, ...BASE_HINT] : BASE_HINT) }), screen === "setup" && _jsx(SetupScreen, {}), screen === "mcp" && _jsx(MCPScreen, {})] }), _jsxs(Box, { position: 'absolute', bottom: 0, right: 1, width: termW, children: [_jsx(Box, { flexGrow: 1 }), hint.map((s, i) => _jsxs(Text, { children: [_jsx(Text, { bold: true, color: 'cyan', children: s.key }), _jsxs(Text, { color: 'white', children: [" ", s.desc] }), i < hint.length - 1 ? _jsx(Text, { color: 'gray', children: "   " }) : null] }, i))] })] }));
 };
 render(_jsx(App, {}), { alternateScreen: true });
