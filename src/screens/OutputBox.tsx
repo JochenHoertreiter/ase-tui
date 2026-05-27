@@ -13,9 +13,10 @@ type Props = {
     active:       boolean
     maxVisible:   number
     contentWidth: number
+    borderColor?: string
 }
 
-const OutputBox = ({ lines, active, maxVisible, contentWidth }: Props) => {
+const OutputBox = ({ lines, active, maxVisible, contentWidth, borderColor = "cyan" }: Props) => {
     const [ offset, setOffset ] = useState(0)
 
     /* inner width: contentWidth minus 1 left border, 1 left padding, 1 right scrollbar/border */
@@ -66,7 +67,7 @@ const OutputBox = ({ lines, active, maxVisible, contentWidth }: Props) => {
         0
 
     return (
-        <Box flexDirection='row' borderStyle='round' borderColor='cyan' width={contentWidth}>
+        <Box flexDirection='row' borderStyle='round' borderColor={borderColor} width={contentWidth}>
             <Box flexDirection='column' flexGrow={1} paddingLeft={1}>
                 {visible.map((line, i) =>
                     <Text key={offset + i}>{line}</Text>

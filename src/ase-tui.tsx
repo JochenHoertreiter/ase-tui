@@ -40,13 +40,14 @@ const tabs: Array<{ label: string, value: Screen }> = [
 
 
 const TITLE = "⧉ ASE — Agentic Software Engineering - Terminal User Interface (tui)"
-const HINT  = "◀ ▶ navigate   ↑ ↓ scroll   Q/ESC quit"
+const BASE_HINT = "◀ ▶ navigate tabs   Q quit"
 
 const App = () => {
     const { exit }      = useApp()
     const { stdout }    = useStdout()
     const escBlockedRef = useRef(false)
-    const [ tab, setTab ] = useState(0)
+    const [ tab,  setTab  ] = useState(0)
+    const [ hint, setHint ] = useState(BASE_HINT)
 
     const termSize = () => ({ termW: stdout.columns ?? 80, termH: stdout.rows ?? 24 })
     const [ { termW, termH }, setTermSize ] = useState(termSize)
@@ -62,10 +63,14 @@ const App = () => {
     useInput((input, key) => {
         if ((input === "q" || input === "Q" || key.escape) && !escBlockedRef.current)
             exit()
-        else if (key.leftArrow)
+        else if (key.leftArrow) {
             setTab((t) => (t - 1 + tabs.length) % tabs.length)
-        else if (key.rightArrow)
+            setHint(BASE_HINT)
+        }
+        else if (key.rightArrow) {
             setTab((t) => (t + 1) % tabs.length)
+            setHint(BASE_HINT)
+        }
     })
 
     /* available width inside paddingLeft={1} container */
@@ -75,7 +80,7 @@ const App = () => {
 
     /* each tab occupies: 1 (left border) + 1 (paddingLeft) + label + 1 (paddingRight) + 1 (right border) */
     const tabsWidth = 1 + tabs.reduce((sum, t) => sum + t.label.length + 4, 0)
-    const restW     = Math.max(0, termW - tabsWidth)
+    const restW     = Math.max(0, termW - tabsWidth - 1)
 
     return (
         <Box flexDirection='column' width={termW} height={termH}>
@@ -99,13 +104,13 @@ const App = () => {
             <Box height={contentH}>
                 {screen === "config"  && <ConfigScreen />}
                 {screen === "service" && <ServiceScreen />}
-                {screen === "task"    && <TaskScreen escBlockedRef={escBlockedRef} />}
+                {screen === "task"    && <TaskScreen escBlockedRef={escBlockedRef} onHint={(s) => setHint(s ? `${s}   ${BASE_HINT}` : BASE_HINT)} />}
                 {screen === "setup"   && <SetupScreen />}
                 {screen === "mcp"     && <MCPScreen />}
             </Box>
             <Box position='absolute' bottom={0} right={1} width={termW}>
                 <Box flexGrow={1} />
-                <Text bold color='cyan'>{cliTruncate(HINT, innerW)}</Text>
+                <Text bold color='cyan'>{cliTruncate(hint, innerW)}</Text>
             </Box>
         </Box>
     )

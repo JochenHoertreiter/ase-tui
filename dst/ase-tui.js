@@ -32,12 +32,13 @@ const tabs = [
     { label: "MCP", value: "mcp" }
 ];
 const TITLE = "⧉ ASE — Agentic Software Engineering - Terminal User Interface (tui)";
-const HINT = "◀ ▶ navigate   ↑ ↓ scroll   Q/ESC quit";
+const BASE_HINT = "◀ ▶ navigate tabs   Q quit";
 const App = () => {
     const { exit } = useApp();
     const { stdout } = useStdout();
     const escBlockedRef = useRef(false);
     const [tab, setTab] = useState(0);
+    const [hint, setHint] = useState(BASE_HINT);
     const termSize = () => ({ termW: stdout.columns ?? 80, termH: stdout.rows ?? 24 });
     const [{ termW, termH }, setTermSize] = useState(termSize);
     useEffect(() => {
@@ -49,19 +50,23 @@ const App = () => {
     useInput((input, key) => {
         if ((input === "q" || input === "Q" || key.escape) && !escBlockedRef.current)
             exit();
-        else if (key.leftArrow)
+        else if (key.leftArrow) {
             setTab((t) => (t - 1 + tabs.length) % tabs.length);
-        else if (key.rightArrow)
+            setHint(BASE_HINT);
+        }
+        else if (key.rightArrow) {
             setTab((t) => (t + 1) % tabs.length);
+            setHint(BASE_HINT);
+        }
     });
     /* available width inside paddingLeft={1} container */
     const innerW = Math.max(1, termW - 1);
     const screen = tabs[tab].value;
     /* each tab occupies: 1 (left border) + 1 (paddingLeft) + label + 1 (paddingRight) + 1 (right border) */
     const tabsWidth = 1 + tabs.reduce((sum, t) => sum + t.label.length + 4, 0);
-    const restW = Math.max(0, termW - tabsWidth);
+    const restW = Math.max(0, termW - tabsWidth - 1);
     return (_jsxs(Box, { flexDirection: 'column', width: termW, height: termH, children: [_jsx(Box, { paddingLeft: 1, children: _jsx(Text, { bold: true, color: 'cyan', children: cliTruncate(TITLE, innerW) }) }), _jsxs(Box, { flexDirection: 'row', paddingLeft: 1, children: [tabs.map((t, i) => i === tab ?
                         _jsx(Box, { borderStyle: BORDER_ACTIVE, borderColor: 'gray', paddingLeft: 1, paddingRight: 1, children: _jsx(Text, { color: 'cyan', children: t.label }) }, t.value) :
-                        _jsx(Box, { borderStyle: BORDER_INACTIVE, borderColor: 'gray', paddingLeft: 1, paddingRight: 1, children: _jsx(Text, { color: 'gray', children: t.label }) }, t.value)), _jsx(Box, { alignSelf: 'flex-end', children: _jsx(Text, { color: 'gray', children: "─".repeat(restW) }) })] }), _jsxs(Box, { height: contentH, children: [screen === "config" && _jsx(ConfigScreen, {}), screen === "service" && _jsx(ServiceScreen, {}), screen === "task" && _jsx(TaskScreen, { escBlockedRef: escBlockedRef }), screen === "setup" && _jsx(SetupScreen, {}), screen === "mcp" && _jsx(MCPScreen, {})] }), _jsxs(Box, { position: 'absolute', bottom: 0, right: 1, width: termW, children: [_jsx(Box, { flexGrow: 1 }), _jsx(Text, { bold: true, color: 'cyan', children: cliTruncate(HINT, innerW) })] })] }));
+                        _jsx(Box, { borderStyle: BORDER_INACTIVE, borderColor: 'gray', paddingLeft: 1, paddingRight: 1, children: _jsx(Text, { color: 'gray', children: t.label }) }, t.value)), _jsx(Box, { alignSelf: 'flex-end', children: _jsx(Text, { color: 'gray', children: "─".repeat(restW) }) })] }), _jsxs(Box, { height: contentH, children: [screen === "config" && _jsx(ConfigScreen, {}), screen === "service" && _jsx(ServiceScreen, {}), screen === "task" && _jsx(TaskScreen, { escBlockedRef: escBlockedRef, onHint: (s) => setHint(s ? `${s}   ${BASE_HINT}` : BASE_HINT) }), screen === "setup" && _jsx(SetupScreen, {}), screen === "mcp" && _jsx(MCPScreen, {})] }), _jsxs(Box, { position: 'absolute', bottom: 0, right: 1, width: termW, children: [_jsx(Box, { flexGrow: 1 }), _jsx(Text, { bold: true, color: 'cyan', children: cliTruncate(hint, innerW) })] })] }));
 };
 render(_jsx(App, {}), { alternateScreen: true });

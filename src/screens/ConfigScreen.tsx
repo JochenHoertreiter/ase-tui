@@ -212,9 +212,9 @@ const ConfigScreen = () => {
                         {rows.map((r, i) => {
                             const isSelected = i === selectedRow
                             const indicator  = isSelected ? <Text color='cyan'>▶ </Text> : <Text>{"  "}</Text>
-                            const projectCol = (mode === "edit" && isSelected)
-                                ? <Text color='cyan'>{pad(inputVal, COL_W.project)}<Text color='cyan'>█</Text></Text>
-                                : <Text color='cyan'>{pad(r.project, COL_W.project)}</Text>
+                            const projectCol = (mode === "edit" && isSelected) ?
+                                <Text color='cyan'>{pad(inputVal, COL_W.project)}<Text color='cyan'>█</Text></Text> :
+                                <Text color='cyan'>{pad(r.project, COL_W.project)}</Text>
                             return (
                                 <Text key={r.key}>
                                     {indicator}

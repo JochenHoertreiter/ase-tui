@@ -1,4 +1,4 @@
-import { jsxs as _jsxs, jsx as _jsx } from "react/jsx-runtime";
+import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
 /*
 **  Agentic Software Engineering (ASE)
 **  Copyright (c) 2025-2026 Dr. Ralf S. Engelschall <rse@engelschall.com>
@@ -16,7 +16,7 @@ const TASK_ACTIONS = [
     { label: "Rename", value: "rename" },
     { label: "Purge", value: "purge" }
 ];
-const TaskScreen = ({ escBlockedRef }) => {
+const TaskScreen = ({ escBlockedRef, onHint }) => {
     const { contentWidth, contentHeight } = useScreen();
     const [loading, setLoading] = useState(true);
     const [currentTask, setCurrentTask] = useState("");
@@ -31,7 +31,7 @@ const TaskScreen = ({ escBlockedRef }) => {
     const [running, setRunning] = useState(false);
     const [output, setOutput] = useState(null);
     const runningRef = useRef(false);
-    const previewFocused = useRef(false);
+    const prevFocus = useRef("tasks");
     useEffect(() => {
         let cancelled = false;
         const load = async () => {
@@ -58,9 +58,8 @@ const TaskScreen = ({ escBlockedRef }) => {
         load().catch((e) => { console.error("[ase-tui] unexpected:", e); });
         return () => { cancelled = true; };
     }, []);
-    /*  load preview when selected task changes; reset previewFocused  */
+    /*  load preview when selected task changes  */
     useEffect(() => {
-        previewFocused.current = false;
         const id = tasks[selected]?.value;
         if (!id || id === previewId)
             return;
@@ -86,6 +85,17 @@ const TaskScreen = ({ escBlockedRef }) => {
         escBlockedRef.current = focus !== "tasks";
         return () => { escBlockedRef.current = false; };
     }, [focus, escBlockedRef]);
+    /*  delegate focus/mode-dependent hint text to the master hint bar  */
+    useEffect(() => {
+        if (mode === "rename")
+            onHint("Enter=OK  ESC=cancel");
+        else if (focus === "tasks")
+            onHint("↑ ↓ navigate tasks  ⏎ select task  P preview");
+        else if (focus === "actions")
+            onHint("↑ ↓ navigate actions  ⏎ execute action  P preview  ESC back");
+        else if (focus === "preview")
+            onHint("↑ ↓ / PgUp/PgDn scroll preview  ESC back");
+    }, [focus, mode, onHint]);
     /*  execute the currently highlighted action  */
     const executeAction = async (item) => {
         if (runningRef.current)
@@ -199,6 +209,10 @@ const TaskScreen = ({ escBlockedRef }) => {
                 setSelected((s) => Math.min(tasks.length - 1, s + 1));
             else if (key.return && tasks.length > 0)
                 setFocus("actions");
+            else if (input === "p" && preview.length > 0) {
+                prevFocus.current = focus;
+                setFocus("preview");
+            }
         }
         /*  focus: actions  */
         else if (focus === "actions") {
@@ -208,23 +222,19 @@ const TaskScreen = ({ escBlockedRef }) => {
                 setActionIdx((i) => Math.min(TASK_ACTIONS.length - 1, i + 1));
             else if (key.escape)
                 setFocus("tasks");
-            else if (key.return) {
-                if (preview.length > 0 && !previewFocused.current) {
-                    previewFocused.current = true;
-                    setFocus("preview");
-                }
-                else
-                    executeAction(TASK_ACTIONS[actionIdx]).catch((e) => {
-                        console.error("[ase-tui] unexpected:", e);
-                    });
+            else if (key.return)
+                executeAction(TASK_ACTIONS[actionIdx]).catch((e) => {
+                    console.error("[ase-tui] unexpected:", e);
+                });
+            else if (input === "p" && preview.length > 0) {
+                prevFocus.current = focus;
+                setFocus("preview");
             }
         }
         /*  focus: preview  */
         else if (focus === "preview") {
-            if (key.escape) {
-                previewFocused.current = false;
-                setFocus("actions");
-            }
+            if (key.escape)
+                setFocus(prevFocus.current);
             /*  ↑↓ and pageUp/pageDown are handled by OutputBox internally  */
         }
     });
@@ -233,20 +243,15 @@ const TaskScreen = ({ escBlockedRef }) => {
     const actionsW = 14;
     const previewW = Math.max(1, contentWidth - listW - actionsW);
     const previewH = Math.max(1, contentHeight - 4);
-    const taskList = (_jsx(Box, { flexDirection: 'column', children: tasks.map((t, i) => (_jsxs(Text, { color: i === selected ? "cyan" : "white", children: [i === selected ? "❯ " : "  ", t.label] }, t.value))) }));
-    const actionList = (_jsx(Box, { flexDirection: 'column', children: TASK_ACTIONS.map((a, i) => (_jsxs(Text, { color: i === actionIdx ? "cyan" : "white", children: [i === actionIdx ? "❯ " : "  ", a.label] }, a.value))) }));
-    const taskPanel = (_jsxs(Box, { flexDirection: 'row', children: [_jsxs(Box, { flexDirection: 'column', width: listW, children: [_jsx(Text, { color: focus === "tasks" ? "cyan" : "blue", children: "Tasks" }), taskList] }), _jsxs(Box, { flexDirection: 'column', width: actionsW, children: [_jsx(Text, { color: focus === "actions" ? "cyan" : "blue", children: "Actions" }), mode === "rename" ?
+    const taskList = (_jsx(Box, { flexDirection: 'column', children: tasks.map((t, i) => (_jsxs(Text, { color: i === selected ? (focus === "tasks" ? "cyan" : "gray") : "white", children: [i === selected ? _jsx(Text, { color: focus === "tasks" ? "cyan" : "gray", children: "\u276F " }) : "  ", t.label] }, t.value))) }));
+    const actionList = (_jsx(Box, { flexDirection: 'column', children: TASK_ACTIONS.map((a, i) => (_jsxs(Text, { color: i === actionIdx ? (focus === "actions" ? "cyan" : "gray") : "white", children: [i === actionIdx ? _jsx(Text, { color: focus === "actions" ? "cyan" : "gray", children: "\u276F " }) : "  ", a.label] }, a.value))) }));
+    const taskPanel = (_jsxs(Box, { flexDirection: 'row', children: [_jsxs(Box, { flexDirection: 'column', width: listW, children: [_jsx(Text, { color: focus === "tasks" ? "cyan" : "gray", children: "Tasks" }), taskList] }), _jsxs(Box, { flexDirection: 'column', width: actionsW, children: [_jsx(Text, { color: focus === "actions" ? "cyan" : "gray", children: "Actions" }), mode === "rename" ?
                         _jsxs(Box, { flexDirection: 'column', children: [_jsx(Text, { color: 'cyan', children: "New name:" }), _jsxs(Text, { color: 'white', children: [renameVal, _jsx(Text, { color: 'cyan', children: "\u2588" })] }), _jsx(Text, { color: 'gray', children: "(Enter=OK ESC=cancel)" })] }) :
                         running ?
                             _jsx(Spinner, { type: 'dots' }) :
-                            actionList] }), _jsx(OutputBox, { lines: preview, active: focus === "preview", maxVisible: previewH, contentWidth: previewW })] }));
-    /*  show hint below the panels when in actions focus so user knows about preview  */
-    const focusHint = focus === "tasks" ? _jsx(Text, { color: 'gray', children: "\u2191\u2193 navigate tasks  RETURN select" }) :
-        focus === "actions" ? _jsx(Text, { color: 'gray', children: "\u2191\u2193 navigate actions  RETURN preview/execute  ESC back" }) :
-            focus === "preview" ? _jsx(Text, { color: 'gray', children: "\u2191\u2193 / PgUp/PgDn scroll preview  ESC back" }) :
-                null;
+                            actionList] }), _jsxs(Box, { flexDirection: 'column', width: previewW, children: [_jsx(Text, { color: focus === "preview" ? "cyan" : "gray", children: "Task Preview" }), _jsx(OutputBox, { lines: preview, active: focus === "preview", maxVisible: previewH, contentWidth: previewW, borderColor: focus === "preview" ? "cyan" : "gray" })] })] }));
     return (_jsxs(Box, { flexDirection: 'column', padding: 1, children: [loading ?
                 _jsxs(Text, { children: [_jsx(Spinner, { type: 'dots' }), " Loading..."] }) :
-                _jsxs(Text, { children: ["Current task: ", _jsx(Text, { color: 'yellow', children: currentTask })] }), _jsx(Text, { children: " " }), !loading && taskPanel, !loading && focusHint, output !== null && _jsx(Text, { color: 'yellow', children: output })] }));
+                _jsxs(Text, { children: ["Current task: ", _jsx(Text, { color: 'yellow', children: currentTask })] }), _jsx(Text, { children: " " }), !loading && taskPanel, output !== null && _jsx(Text, { color: 'yellow', children: output })] }));
 };
 export default TaskScreen;

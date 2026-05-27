@@ -15,7 +15,7 @@ import OutputBox                                      from "./OutputBox.js"
 type Mode  = "list" | "rename"
 type Focus = "tasks" | "actions" | "preview"
 
-type Props = { escBlockedRef: RefObject<boolean> }
+type Props = { escBlockedRef: RefObject<boolean>, onHint: (hint: string) => void }
 
 const TASK_ACTIONS: ActionItem[] = [
     { label: "Switch",  value: "switch"  },
@@ -24,7 +24,7 @@ const TASK_ACTIONS: ActionItem[] = [
     { label: "Purge",   value: "purge"   }
 ]
 
-const TaskScreen = ({ escBlockedRef }: Props) => {
+const TaskScreen = ({ escBlockedRef, onHint }: Props) => {
     const { contentWidth, contentHeight } = useScreen()
     const [ loading,     setLoading     ] = useState(true)
     const [ currentTask, setCurrentTask ] = useState("")
@@ -38,8 +38,8 @@ const TaskScreen = ({ escBlockedRef }: Props) => {
     const [ previewId,   setPreviewId   ] = useState("")
     const [ running,     setRunning     ] = useState(false)
     const [ output,      setOutput      ] = useState<string | null>(null)
-    const runningRef      = useRef(false)
-    const previewFocused  = useRef(false)
+    const runningRef  = useRef(false)
+    const prevFocus   = useRef<Focus>("tasks")
 
     useEffect(() => {
         let cancelled = false
@@ -68,9 +68,8 @@ const TaskScreen = ({ escBlockedRef }: Props) => {
         return () => { cancelled = true }
     }, [])
 
-    /*  load preview when selected task changes; reset previewFocused  */
+    /*  load preview when selected task changes  */
     useEffect(() => {
-        previewFocused.current = false
         const id = tasks[selected]?.value
         if (!id || id === previewId)
             return
@@ -97,6 +96,18 @@ const TaskScreen = ({ escBlockedRef }: Props) => {
         escBlockedRef.current = focus !== "tasks"
         return () => { escBlockedRef.current = false }
     }, [ focus, escBlockedRef ])
+
+    /*  delegate focus/mode-dependent hint text to the master hint bar  */
+    useEffect(() => {
+        if (mode === "rename")
+            onHint("Enter=OK  ESC=cancel")
+        else if (focus === "tasks")
+            onHint("↑ ↓ navigate tasks  ⏎ select task  P preview")
+        else if (focus === "actions")
+            onHint("↑ ↓ navigate actions  ⏎ execute action  P preview  ESC back")
+        else if (focus === "preview")
+            onHint("↑ ↓ / PgUp/PgDn scroll preview  ESC back")
+    }, [ focus, mode, onHint ])
 
     /*  execute the currently highlighted action  */
     const executeAction = async (item: ActionItem) => {
@@ -216,6 +227,10 @@ const TaskScreen = ({ escBlockedRef }: Props) => {
                 setSelected((s) => Math.min(tasks.length - 1, s + 1))
             else if (key.return && tasks.length > 0)
                 setFocus("actions")
+            else if (input === "p" && preview.length > 0) {
+                prevFocus.current = focus
+                setFocus("preview")
+            }
         }
         /*  focus: actions  */
         else if (focus === "actions") {
@@ -225,23 +240,19 @@ const TaskScreen = ({ escBlockedRef }: Props) => {
                 setActionIdx((i) => Math.min(TASK_ACTIONS.length - 1, i + 1))
             else if (key.escape)
                 setFocus("tasks")
-            else if (key.return) {
-                if (preview.length > 0 && !previewFocused.current) {
-                    previewFocused.current = true
-                    setFocus("preview")
-                }
-                else
-                    executeAction(TASK_ACTIONS[actionIdx]).catch((e) => {
-                        console.error("[ase-tui] unexpected:", e)
-                    })
+            else if (key.return)
+                executeAction(TASK_ACTIONS[actionIdx]).catch((e) => {
+                    console.error("[ase-tui] unexpected:", e)
+                })
+            else if (input === "p" && preview.length > 0) {
+                prevFocus.current = focus
+                setFocus("preview")
             }
         }
         /*  focus: preview  */
         else if (focus === "preview") {
-            if (key.escape) {
-                previewFocused.current = false
-                setFocus("actions")
-            }
+            if (key.escape)
+                setFocus(prevFocus.current)
             /*  ↑↓ and pageUp/pageDown are handled by OutputBox internally  */
         }
     })
@@ -255,8 +266,8 @@ const TaskScreen = ({ escBlockedRef }: Props) => {
     const taskList = (
         <Box flexDirection='column'>
             {tasks.map((t, i) => (
-                <Text key={t.value} color={i === selected ? "cyan" : "white"}>
-                    {i === selected ? "❯ " : "  "}{t.label}
+                <Text key={t.value} color={i === selected ? (focus === "tasks" ? "cyan" : "gray") : "white"}>
+                    {i === selected ? <Text color={focus === "tasks" ? "cyan" : "gray"}>❯ </Text> : "  "}{t.label}
                 </Text>
             ))}
         </Box>
@@ -265,8 +276,8 @@ const TaskScreen = ({ escBlockedRef }: Props) => {
     const actionList = (
         <Box flexDirection='column'>
             {TASK_ACTIONS.map((a, i) => (
-                <Text key={a.value} color={i === actionIdx ? "cyan" : "white"}>
-                    {i === actionIdx ? "❯ " : "  "}{a.label}
+                <Text key={a.value} color={i === actionIdx ? (focus === "actions" ? "cyan" : "gray") : "white"}>
+                    {i === actionIdx ? <Text color={focus === "actions" ? "cyan" : "gray"}>❯ </Text> : "  "}{a.label}
                 </Text>
             ))}
         </Box>
@@ -275,11 +286,11 @@ const TaskScreen = ({ escBlockedRef }: Props) => {
     const taskPanel = (
         <Box flexDirection='row'>
             <Box flexDirection='column' width={listW}>
-                <Text color={focus === "tasks" ? "cyan" : "blue"}>Tasks</Text>
+                <Text color={focus === "tasks" ? "cyan" : "gray"}>Tasks</Text>
                 {taskList}
             </Box>
             <Box flexDirection='column' width={actionsW}>
-                <Text color={focus === "actions" ? "cyan" : "blue"}>Actions</Text>
+                <Text color={focus === "actions" ? "cyan" : "gray"}>Actions</Text>
                 {mode === "rename" ?
                     <Box flexDirection='column'>
                         <Text color='cyan'>New name:</Text>
@@ -290,21 +301,18 @@ const TaskScreen = ({ escBlockedRef }: Props) => {
                         <Spinner type='dots' /> :
                         actionList}
             </Box>
-            <OutputBox
-                lines={preview}
-                active={focus === "preview"}
-                maxVisible={previewH}
-                contentWidth={previewW}
-            />
+            <Box flexDirection='column' width={previewW}>
+                <Text color={focus === "preview" ? "cyan" : "gray"}>Task Preview</Text>
+                <OutputBox
+                    lines={preview}
+                    active={focus === "preview"}
+                    maxVisible={previewH}
+                    contentWidth={previewW}
+                    borderColor={focus === "preview" ? "cyan" : "gray"}
+                />
+            </Box>
         </Box>
     )
-
-    /*  show hint below the panels when in actions focus so user knows about preview  */
-    const focusHint =
-        focus === "tasks"   ? <Text color='gray'>↑↓ navigate tasks  RETURN select</Text> :
-        focus === "actions" ? <Text color='gray'>↑↓ navigate actions  RETURN preview/execute  ESC back</Text> :
-        focus === "preview" ? <Text color='gray'>↑↓ / PgUp/PgDn scroll preview  ESC back</Text> :
-        null
 
     return (
         <Box flexDirection='column' padding={1}>
@@ -313,7 +321,6 @@ const TaskScreen = ({ escBlockedRef }: Props) => {
                 <Text>Current task: <Text color='yellow'>{currentTask}</Text></Text>}
             <Text> </Text>
             {!loading && taskPanel}
-            {!loading && focusHint}
             {output !== null && <Text color='yellow'>{output}</Text>}
         </Box>
     )

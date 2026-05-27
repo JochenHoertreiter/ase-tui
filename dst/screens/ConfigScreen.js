@@ -166,9 +166,9 @@ const ConfigScreen = () => {
                 _jsxs(Box, { flexDirection: 'column', children: [hdr, sep, rows.map((r, i) => {
                             const isSelected = i === selectedRow;
                             const indicator = isSelected ? _jsx(Text, { color: 'cyan', children: "\u25B6 " }) : _jsx(Text, { children: "  " });
-                            const projectCol = (mode === "edit" && isSelected)
-                                ? _jsxs(Text, { color: 'cyan', children: [pad(inputVal, COL_W.project), _jsx(Text, { color: 'cyan', children: "\u2588" })] })
-                                : _jsx(Text, { color: 'cyan', children: pad(r.project, COL_W.project) });
+                            const projectCol = (mode === "edit" && isSelected) ?
+                                _jsxs(Text, { color: 'cyan', children: [pad(inputVal, COL_W.project), _jsx(Text, { color: 'cyan', children: "\u2588" })] }) :
+                                _jsx(Text, { color: 'cyan', children: pad(r.project, COL_W.project) });
                             return (_jsxs(Text, { children: [indicator, _jsx(Text, { color: 'white', children: pad(r.key, COL_W.key) }), "  ", _jsx(Text, { color: 'gray', children: pad(r.default, COL_W.default) }), "  ", _jsx(Text, { color: 'yellow', children: pad(r.user, COL_W.user) }), "  ", projectCol] }, r.key));
                         }), _jsx(Text, { children: " " }), mode === "edit" ?
                             _jsx(Text, { color: 'gray', children: "(Enter=save  ESC=cancel)" }) :

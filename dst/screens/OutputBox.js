@@ -7,7 +7,7 @@ import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
 import { useEffect, useState, useMemo } from "react";
 import { Box, Text, useInput } from "ink";
 import wrapAnsi from "wrap-ansi";
-const OutputBox = ({ lines, active, maxVisible, contentWidth }) => {
+const OutputBox = ({ lines, active, maxVisible, contentWidth, borderColor = "cyan" }) => {
     const [offset, setOffset] = useState(0);
     /* inner width: contentWidth minus 1 left border, 1 left padding, 1 right scrollbar/border */
     const innerW = Math.max(1, contentWidth - 3);
@@ -48,7 +48,7 @@ const OutputBox = ({ lines, active, maxVisible, contentWidth }) => {
     const thumbPos = maxOffset > 0 ?
         Math.round((offset / maxOffset) * (barHeight - 1)) :
         0;
-    return (_jsxs(Box, { flexDirection: 'row', borderStyle: 'round', borderColor: 'cyan', width: contentWidth, children: [_jsx(Box, { flexDirection: 'column', flexGrow: 1, paddingLeft: 1, children: visible.map((line, i) => _jsx(Text, { children: line }, offset + i)) }), needBar ?
+    return (_jsxs(Box, { flexDirection: 'row', borderStyle: 'round', borderColor: borderColor, width: contentWidth, children: [_jsx(Box, { flexDirection: 'column', flexGrow: 1, paddingLeft: 1, children: visible.map((line, i) => _jsx(Text, { children: line }, offset + i)) }), needBar ?
                 _jsx(Box, { flexDirection: 'column', width: 1, children: [...Array(barHeight).keys()].map((i) => _jsx(Text, { color: 'cyan', children: i === thumbPos ? "█" : "│" }, i)) }) :
                 null] }));
 };

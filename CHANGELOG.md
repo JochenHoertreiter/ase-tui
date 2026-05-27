@@ -3,6 +3,12 @@
 
 ## 0.0.2 (2026-05-27)
 
+-   FEATURE:     add dynamic global hint bar via `onHint` callback in `ase-tui`/`TaskScreen`
+-   FEATURE:     add "Task Preview" header and dynamic `borderColor` prop to `OutputBox`
+-   IMPROVEMENT: navigate to preview via `p` key from tasks/actions focus; ESC restores previous focus
+-   IMPROVEMENT: `return` in actions focus executes action directly without implicit preview jump
+-   CLEANUP:     reformat ternary expression in `ConfigScreen` to match code style
+
 ## 0.0.1 (2026-05-27)
 
 -   FEATURE:     initial TUI with Config, Service, Task, and Setup screens
