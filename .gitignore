@@ -1,5 +1,4 @@
 node_modules/
-dst/
 *.log
 .DS_Store
 /.ase
