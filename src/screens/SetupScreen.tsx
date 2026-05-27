@@ -9,7 +9,9 @@ import ActionScreen from "./ActionScreen.js"
 const actions = [
     { label: "Install",   value: "install"   },
     { label: "Update",    value: "update"    },
-    { label: "Uninstall", value: "uninstall" }
+    { label: "Uninstall", value: "uninstall" },
+    { label: "Enable",    value: "enable"    },
+    { label: "Disable",   value: "disable"   }
 ]
 
 const SetupScreen = () =>

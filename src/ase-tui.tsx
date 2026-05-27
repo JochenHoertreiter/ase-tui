@@ -4,7 +4,7 @@
 **  Licensed under GPL 3.0 <https://spdx.org/licenses/GPL-3.0-only>
 */
 
-import { useState, useEffect }                            from "react"
+import { useState, useEffect, useRef }                    from "react"
 import { render, Box, Text, useInput, useApp, useStdout } from "ink"
 import type { ComponentProps }                            from "react"
 import cliTruncate                                        from "cli-truncate"
@@ -13,9 +13,10 @@ import ConfigScreen        from "./screens/ConfigScreen.js"
 import ServiceScreen       from "./screens/ServiceScreen.js"
 import TaskScreen          from "./screens/TaskScreen.js"
 import SetupScreen         from "./screens/SetupScreen.js"
+import MCPScreen           from "./screens/MCPScreen.js"
 import { HEADER_LINES }    from "./screens/Screen.js"
 
-type Screen = "config" | "service" | "task" | "setup"
+type Screen = "config" | "service" | "task" | "setup" | "mcp"
 
 /* tab border styles */
 const BORDER_ACTIVE:   ComponentProps<typeof Box>["borderStyle"] = {
@@ -33,7 +34,8 @@ const tabs: Array<{ label: string, value: Screen }> = [
     { label: "Config",  value: "config"  },
     { label: "Service", value: "service" },
     { label: "Task",    value: "task"    },
-    { label: "Setup",   value: "setup"   }
+    { label: "Setup",   value: "setup"   },
+    { label: "MCP",     value: "mcp"     }
 ]
 
 
@@ -41,8 +43,9 @@ const TITLE = "⧉ ASE — Agentic Software Engineering - Terminal User Interfac
 const HINT  = "◀ ▶ navigate   ↑ ↓ scroll   Q/ESC quit"
 
 const App = () => {
-    const { exit }   = useApp()
-    const { stdout } = useStdout()
+    const { exit }      = useApp()
+    const { stdout }    = useStdout()
+    const escBlockedRef = useRef(false)
     const [ tab, setTab ] = useState(0)
 
     const termSize = () => ({ termW: stdout.columns ?? 80, termH: stdout.rows ?? 24 })
@@ -57,7 +60,7 @@ const App = () => {
     const contentH = Math.max(1, termH - HEADER_LINES)
 
     useInput((input, key) => {
-        if (input === "q" || input === "Q" || key.escape)
+        if ((input === "q" || input === "Q" || key.escape) && !escBlockedRef.current)
             exit()
         else if (key.leftArrow)
             setTab((t) => (t - 1 + tabs.length) % tabs.length)
@@ -96,8 +99,9 @@ const App = () => {
             <Box height={contentH}>
                 {screen === "config"  && <ConfigScreen />}
                 {screen === "service" && <ServiceScreen />}
-                {screen === "task"    && <TaskScreen />}
+                {screen === "task"    && <TaskScreen escBlockedRef={escBlockedRef} />}
                 {screen === "setup"   && <SetupScreen />}
+                {screen === "mcp"     && <MCPScreen />}
             </Box>
             <Box position='absolute' bottom={0} right={1} width={termW}>
                 <Box flexGrow={1} />
