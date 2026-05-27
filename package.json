@@ -1,0 +1,57 @@
+{
+    "name":                                 "@JochenHoertreiter/ase-tui",
+    "description":                          "Agentic Software Engineering (ASE) — Interactive TUI",
+    "publishConfig":                        { "access": "public" },
+    "keywords":                             [ "agentic", "ai", "coding", "tool", "cli", "tui", "software", "engineering" ],
+    "homepage":                             "http://github.com/JochenHoertreiter/ase-tui",
+    "repository":                           { "url": "git+https://github.com/JochenHoertreiter/ase-tui.git", "type": "git" },
+    "bugs":                                 { "url": "https://github.com/JochenHoertreiter/ase-tui/issues" },
+    "version":                              "0.0.1",
+    "license":                              "GPL-3.0-only",
+    "author": {
+        "name":                             "Jochen Hörtreiter"
+    },
+    "type":                                 "module",
+    "bin":                                  { "ase-tui": "bin/ase-tui.cjs" },
+    "devDependencies": {
+        "eslint":                           "9.39.4",
+        "@eslint/js":                       "9.39.4",
+        "typescript-eslint":                "8.59.3",
+        "@typescript-eslint/parser":        "8.59.3",
+        "@typescript-eslint/eslint-plugin": "8.59.3",
+        "eslint-plugin-promise":            "7.3.0",
+        "eslint-plugin-import":             "2.32.0",
+        "neostandard":                      "0.13.0",
+        "globals":                          "17.6.0",
+        "typescript":                       "6.0.3",
+        "@rse/stx":                         "1.1.5",
+        "nodemon":                          "3.1.14",
+        "shx":                              "0.4.0",
+        "@types/node":                      "25.7.0",
+        "@types/react":                     "19.2.14",
+        "@types/luxon":                     "3.7.1"
+    },
+    "dependencies": {
+        "react":                            "19.2.0",
+        "ink":                              "7.0.3",
+        "ink-select-input":                 "6.2.0",
+        "ink-spinner":                      "5.0.0",
+        "execa":                            "9.6.1",
+        "strip-ansi":                       "7.1.0",
+        "luxon":                            "3.7.2",
+        "cli-truncate":                     "6.0.0",
+        "wrap-ansi":                        "10.0.0"
+    },
+    "engines": {
+        "npm":                              ">=10.0.0",
+        "node":                             ">=22.0.0"
+    },
+    "files": [
+        "dst/**/*",
+        "bin/**/*",
+        "README.md"
+    ],
+    "scripts": {
+        "start":                            "stx -v4 -l warning -c etc/stx.conf"
+    }
+}
