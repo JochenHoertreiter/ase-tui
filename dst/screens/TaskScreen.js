@@ -1,4 +1,4 @@
-import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
+import { jsx as _jsx, jsxs as _jsxs, Fragment as _Fragment } from "react/jsx-runtime";
 /*
 **  Agentic Software Engineering (ASE)
 **  Copyright (c) 2025-2026 Dr. Ralf S. Engelschall <rse@engelschall.com>
@@ -16,6 +16,7 @@ const TASK_ACTIONS = [
     { label: "Rename", value: "rename" },
     { label: "Purge", value: "purge" }
 ];
+const errMsg = (err) => err instanceof Error ? err.message : String(err);
 const TaskScreen = ({ escBlockedRef, onHint }) => {
     const { contentWidth, contentHeight } = useScreen();
     const [loading, setLoading] = useState(true);
@@ -24,10 +25,9 @@ const TaskScreen = ({ escBlockedRef, onHint }) => {
     const [selected, setSelected] = useState(0);
     const [actionIdx, setActionIdx] = useState(0);
     const [focus, setFocus] = useState("tasks");
-    const [mode, setMode] = useState("list");
     const [renameVal, setRenameVal] = useState("");
     const [preview, setPreview] = useState([]);
-    const [previewId, setPreviewId] = useState("");
+    const [previewLoading, setPreviewLoading] = useState(false);
     const [running, setRunning] = useState(false);
     const [output, setOutput] = useState(null);
     const runningRef = useRef(false);
@@ -49,45 +49,24 @@ const TaskScreen = ({ escBlockedRef, onHint }) => {
             catch (err) {
                 if (!cancelled) {
                     setTasks([]);
-                    setOutput(`Error loading tasks: ${err instanceof Error ? err.message : String(err)}`);
+                    setOutput(`Error loading tasks: ${errMsg(err)}`);
                 }
             }
             if (!cancelled)
                 setLoading(false);
         };
-        load().catch((e) => { console.error("[ase-tui] unexpected:", e); });
+        load().catch((e) => { if (!cancelled)
+            console.error("[ase-tui] unexpected:", e); });
         return () => { cancelled = true; };
     }, []);
-    /*  load preview when selected task changes  */
-    useEffect(() => {
-        const id = tasks[selected]?.value;
-        if (!id || id === previewId)
-            return;
-        let cancelled = false;
-        const load = async () => {
-            try {
-                const res = await execa("ase", ["task", "load", id]);
-                if (!cancelled) {
-                    setPreview(res.stdout.split("\n"));
-                    setPreviewId(id);
-                }
-            }
-            catch (_) {
-                if (!cancelled)
-                    setPreview([]);
-            }
-        };
-        load().catch((e) => { console.error("[ase-tui] unexpected:", e); });
-        return () => { cancelled = true; };
-    }, [selected, tasks]);
     /*  sync escBlockedRef so App's global ESC handler knows when to block  */
     useEffect(() => {
         escBlockedRef.current = focus !== "tasks";
         return () => { escBlockedRef.current = false; };
     }, [focus, escBlockedRef]);
-    /*  delegate focus/mode-dependent hint text to the master hint bar  */
+    /*  delegate focus-dependent hint text to the master hint bar  */
     useEffect(() => {
-        if (mode === "rename")
+        if (focus === "rename")
             onHint([
                 { key: "⏎", desc: "OK" },
                 { key: "ESC", desc: "cancel" }
@@ -96,13 +75,13 @@ const TaskScreen = ({ escBlockedRef, onHint }) => {
             onHint([
                 { key: "↑ ↓", desc: "navigate tasks" },
                 { key: "⏎", desc: "select task" },
-                { key: "P", desc: "preview" }
+                { key: "p", desc: "preview" }
             ]);
         else if (focus === "actions")
             onHint([
                 { key: "↑ ↓", desc: "navigate actions" },
                 { key: "⏎", desc: "execute action" },
-                { key: "P", desc: "preview" },
+                { key: "p", desc: "preview" },
                 { key: "ESC", desc: "back" }
             ]);
         else if (focus === "preview")
@@ -110,7 +89,27 @@ const TaskScreen = ({ escBlockedRef, onHint }) => {
                 { key: "↑ ↓ / PgUp/PgDn", desc: "scroll preview" },
                 { key: "ESC", desc: "back" }
             ]);
-    }, [focus, mode, onHint]);
+    }, [focus, onHint]);
+    /*  load preview on demand and switch focus to preview pane  */
+    const loadPreview = async () => {
+        const id = tasks[selected]?.value;
+        if (!id)
+            return;
+        setPreview([]);
+        setPreviewLoading(true);
+        prevFocus.current = focus;
+        setFocus("preview");
+        try {
+            const res = await execa("ase", ["task", "load", id]);
+            setPreview(res.stdout.split("\n"));
+        }
+        catch (_) {
+            setPreview([]);
+        }
+        finally {
+            setPreviewLoading(false);
+        }
+    };
     /*  execute the currently highlighted action  */
     const executeAction = async (item) => {
         if (runningRef.current)
@@ -120,21 +119,29 @@ const TaskScreen = ({ escBlockedRef, onHint }) => {
             return;
         if (item.value === "rename") {
             setRenameVal(id);
-            setMode("rename");
+            setFocus("rename");
             return;
         }
         if (item.value === "switch") {
+            runningRef.current = true;
+            setRunning(true);
             try {
                 await execa("ase", ["config", "--scope", "project", "set", "agent.task", id]);
                 setCurrentTask(id);
                 setOutput(`Switched to task: ${id}`);
             }
             catch (err) {
-                setOutput(`Error: ${err instanceof Error ? err.message : String(err)}`);
+                setOutput(`Error: ${errMsg(err)}`);
+            }
+            finally {
+                runningRef.current = false;
+                setRunning(false);
             }
             return;
         }
         if (item.value === "delete") {
+            runningRef.current = true;
+            setRunning(true);
             try {
                 await execa("ase", ["task", "delete", id]);
                 setTasks((prev) => {
@@ -143,12 +150,15 @@ const TaskScreen = ({ escBlockedRef, onHint }) => {
                     return next;
                 });
                 setPreview([]);
-                setPreviewId("");
                 setOutput(`Deleted task: ${id}`);
                 setFocus("tasks");
             }
             catch (err) {
-                setOutput(`Error: ${err instanceof Error ? err.message : String(err)}`);
+                setOutput(`Error: ${errMsg(err)}`);
+            }
+            finally {
+                runningRef.current = false;
+                setRunning(false);
             }
             return;
         }
@@ -162,11 +172,14 @@ const TaskScreen = ({ escBlockedRef, onHint }) => {
                 const listRes = await execa("ase", ["task", "list"]);
                 const ids = listRes.stdout.trim().split("\n").filter(Boolean);
                 setTasks(ids.map((id2) => ({ label: id2, value: id2 })));
-                setSelected(0);
+                setSelected((s) => Math.min(s, Math.max(0, ids.length - 1)));
+                setPreview([]);
+                if (ids.length === 0)
+                    setOutput("No tasks remaining after purge.");
                 setFocus("tasks");
             }
             catch (err) {
-                setOutput(`Error: ${err instanceof Error ? err.message : String(err)}`);
+                setOutput(`Error: ${errMsg(err)}`);
             }
             finally {
                 runningRef.current = false;
@@ -176,10 +189,9 @@ const TaskScreen = ({ escBlockedRef, onHint }) => {
     };
     /*  central hierarchical keyboard navigation  */
     useInput((input, key) => {
-        /*  rename mode captures all keys itself  */
-        if (mode === "rename") {
+        /*  rename focus captures all keys itself  */
+        if (focus === "rename") {
             if (key.escape) {
-                setMode("list");
                 setRenameVal("");
                 setFocus("tasks");
             }
@@ -187,7 +199,6 @@ const TaskScreen = ({ escBlockedRef, onHint }) => {
                 const oldId = tasks[selected]?.value;
                 if (!oldId || !renameVal.trim())
                     return;
-                setMode("list");
                 const newId = renameVal.trim();
                 setRenameVal("");
                 setFocus("tasks");
@@ -201,7 +212,7 @@ const TaskScreen = ({ escBlockedRef, onHint }) => {
                     setOutput(`Renamed: ${oldId} → ${newId}`);
                 })
                     .catch((err) => {
-                    setOutput(`Error: ${err instanceof Error ? err.message : String(err)}`);
+                    setOutput(`Error: ${errMsg(err)}`);
                 })
                     .finally(() => {
                     runningRef.current = false;
@@ -214,7 +225,7 @@ const TaskScreen = ({ escBlockedRef, onHint }) => {
                 setRenameVal((v) => v + input);
             return;
         }
-        if (running)
+        if (runningRef.current)
             return;
         /*  focus: tasks  */
         if (focus === "tasks") {
@@ -224,13 +235,11 @@ const TaskScreen = ({ escBlockedRef, onHint }) => {
                 setSelected((s) => Math.min(tasks.length - 1, s + 1));
             else if (key.return && tasks.length > 0)
                 setFocus("actions");
-            else if (input === "p" && preview.length > 0) {
-                prevFocus.current = focus;
-                setFocus("preview");
-            }
+            else if (input === "p" && tasks.length > 0)
+                loadPreview().catch((e) => { console.error("[ase-tui] unexpected:", e); });
         }
         /*  focus: actions  */
-        else if (focus === "actions") {
+        if (focus === "actions") {
             if (key.upArrow)
                 setActionIdx((i) => Math.max(0, i - 1));
             else if (key.downArrow)
@@ -241,15 +250,15 @@ const TaskScreen = ({ escBlockedRef, onHint }) => {
                 executeAction(TASK_ACTIONS[actionIdx]).catch((e) => {
                     console.error("[ase-tui] unexpected:", e);
                 });
-            else if (input === "p" && preview.length > 0) {
-                prevFocus.current = focus;
-                setFocus("preview");
-            }
+            else if (input === "p" && tasks.length > 0)
+                loadPreview().catch((e) => { console.error("[ase-tui] unexpected:", e); });
         }
         /*  focus: preview  */
-        else if (focus === "preview") {
-            if (key.escape)
+        if (focus === "preview") {
+            if (key.escape) {
+                setPreview([]);
                 setFocus(prevFocus.current);
+            }
             /*  ↑↓ and pageUp/pageDown are handled by OutputBox internally  */
         }
     });
@@ -260,11 +269,11 @@ const TaskScreen = ({ escBlockedRef, onHint }) => {
     const previewH = Math.max(1, contentHeight - 4);
     const taskList = (_jsx(Box, { flexDirection: 'column', children: tasks.map((t, i) => (_jsxs(Text, { color: i === selected ? (focus === "tasks" ? "cyan" : "gray") : "white", children: [i === selected ? _jsx(Text, { color: focus === "tasks" ? "cyan" : "gray", children: "\u276F " }) : "  ", t.label] }, t.value))) }));
     const actionList = (_jsx(Box, { flexDirection: 'column', children: TASK_ACTIONS.map((a, i) => (_jsxs(Text, { color: i === actionIdx ? (focus === "actions" ? "cyan" : "gray") : "white", children: [i === actionIdx ? _jsx(Text, { color: focus === "actions" ? "cyan" : "gray", children: "\u276F " }) : "  ", a.label] }, a.value))) }));
-    const taskPanel = (_jsxs(Box, { flexDirection: 'row', children: [_jsxs(Box, { flexDirection: 'column', width: listW, children: [_jsx(Text, { color: focus === "tasks" ? "cyan" : "gray", children: "Tasks" }), taskList] }), _jsxs(Box, { flexDirection: 'column', width: actionsW, children: [_jsx(Text, { color: focus === "actions" ? "cyan" : "gray", children: "Actions" }), mode === "rename" ?
-                        _jsxs(Box, { flexDirection: 'column', children: [_jsx(Text, { color: 'cyan', children: "New name:" }), _jsxs(Text, { color: 'white', children: [renameVal, _jsx(Text, { color: 'cyan', children: "\u2588" })] }), _jsx(Text, { color: 'gray', children: "(Enter=OK ESC=cancel)" })] }) :
+    const taskPanel = (_jsxs(Box, { flexDirection: 'row', children: [_jsxs(Box, { flexDirection: 'column', width: listW, children: [_jsx(Text, { color: focus === "tasks" ? "cyan" : "gray", children: "Tasks" }), taskList] }), _jsxs(Box, { flexDirection: 'column', width: actionsW, children: [_jsx(Text, { color: focus === "actions" ? "cyan" : "gray", children: "Actions" }), focus === "rename" ?
+                        _jsxs(Box, { flexDirection: 'column', children: [_jsx(Text, { color: 'cyan', children: "New name:" }), _jsxs(Text, { color: 'white', children: [renameVal, _jsx(Text, { color: 'cyan', children: "\u2588" })] })] }) :
                         running ?
                             _jsx(Spinner, { type: 'dots' }) :
-                            actionList] }), _jsxs(Box, { flexDirection: 'column', width: previewW, children: [_jsx(Text, { color: focus === "preview" ? "cyan" : "gray", children: "Task Preview" }), _jsx(OutputBox, { lines: preview, active: focus === "preview", maxVisible: previewH, contentWidth: previewW, borderColor: focus === "preview" ? "cyan" : "gray" })] })] }));
+                            actionList] }), _jsxs(Box, { flexDirection: 'column', width: previewW, children: [_jsx(Text, { color: focus === "preview" ? "cyan" : "gray", children: previewLoading ? _jsxs(_Fragment, { children: [_jsx(Spinner, { type: 'dots' }), " loading"] }) : "Task Preview" }), _jsx(OutputBox, { lines: preview, active: focus === "preview", maxVisible: previewH, contentWidth: previewW, borderColor: focus === "preview" ? "cyan" : "gray" })] })] }));
     return (_jsxs(Box, { flexDirection: 'column', padding: 1, children: [loading ?
                 _jsxs(Text, { children: [_jsx(Spinner, { type: 'dots' }), " Loading..."] }) :
                 _jsxs(Text, { children: ["Current task: ", _jsx(Text, { color: 'yellow', children: currentTask })] }), _jsx(Text, { children: " " }), !loading && taskPanel, output !== null && _jsx(Text, { color: 'yellow', children: output })] }));

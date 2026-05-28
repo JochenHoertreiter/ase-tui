@@ -4,7 +4,7 @@
 **  Licensed under GPL 3.0 <https://spdx.org/licenses/GPL-3.0-only>
 */
 
-import { useState, useEffect, useRef }                    from "react"
+import { useState, useEffect, useRef, useCallback }       from "react"
 import { render, Box, Text, useInput, useApp, useStdout } from "ink"
 import type { ComponentProps }                            from "react"
 import cliTruncate                                        from "cli-truncate"
@@ -43,8 +43,8 @@ const tabs: Array<{ label: string, value: Screen }> = [
 
 const TITLE = "⧉ ASE — Agentic Software Engineering - Terminal User Interface (tui)"
 const BASE_HINT: HintSegment[] = [
-    { key: "◀ ▶", desc: "navigate tabs" },
-    { key: "Q",   desc: "quit"          }
+    { key: "← →", desc: "navigate tabs" },
+    { key: "q",   desc: "quit"          }
 ]
 
 const App = () => {
@@ -87,6 +87,11 @@ const App = () => {
     const tabsWidth = 1 + tabs.reduce((sum, t) => sum + t.label.length + 4, 0)
     const restW     = Math.max(0, termW - tabsWidth - 1)
 
+    const onHintCb = useCallback(
+        (s: HintSegment[] | null) => setHint(s ? [ ...s, ...BASE_HINT ] : BASE_HINT),
+        [ setHint ]
+    )
+
     return (
         <Box flexDirection='column' width={termW} height={termH}>
             <Box paddingLeft={1}>
@@ -109,7 +114,7 @@ const App = () => {
             <Box height={contentH}>
                 {screen === "config"  && <ConfigScreen />}
                 {screen === "service" && <ServiceScreen />}
-                {screen === "task"    && <TaskScreen escBlockedRef={escBlockedRef} onHint={(s) => setHint(s ? [ ...s, ...BASE_HINT ] : BASE_HINT)} />}
+                {screen === "task"    && <TaskScreen escBlockedRef={escBlockedRef} onHint={onHintCb} />}
                 {screen === "setup"   && <SetupScreen />}
                 {screen === "mcp"     && <MCPScreen />}
             </Box>
