@@ -12,7 +12,7 @@ import { DateTime } from "luxon";
 import stripAnsi from "strip-ansi";
 import { execa } from "execa";
 import { useScreen, SelectIndicator, SelectItem, runCommand } from "./Screen.js";
-import OutputBox from "./OutputBox.js";
+import OutputBox from "../components/OutputBox.js";
 /*  parse "ase setup mcp list" table output into server list  */
 const parseMcpList = (stdout) => {
     const servers = [];

@@ -10,7 +10,7 @@ import { Box, Text, useInput }                        from "ink"
 import Spinner                                        from "ink-spinner"
 import { execa }                                      from "execa"
 import { useScreen, runCommand, type ActionItem }     from "./Screen.js"
-import OutputBox                                      from "./OutputBox.js"
+import OutputBox                                      from "../components/OutputBox.js"
 import type { HintSegment }                           from "../ase-tui.js"
 
 type Focus = "tasks" | "actions" | "preview" | "rename"

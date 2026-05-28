@@ -12,7 +12,7 @@ import { DateTime }                   from "luxon"
 import stripAnsi                      from "strip-ansi"
 import { execa }                      from "execa"
 import { useScreen, SelectIndicator, SelectItem, runCommand, type ActionItem } from "./Screen.js"
-import OutputBox                      from "./OutputBox.js"
+import OutputBox                      from "../components/OutputBox.js"
 
 type McpServer = { id: string, name: string }
 

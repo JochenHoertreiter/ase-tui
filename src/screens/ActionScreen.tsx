@@ -10,7 +10,7 @@ import SelectInput             from "ink-select-input"
 import Spinner                 from "ink-spinner"
 import { DateTime }            from "luxon"
 import { useScreen, SelectIndicator, SelectItem, runCommand, type ActionItem } from "./Screen.js"
-import OutputBox               from "./OutputBox.js"
+import OutputBox               from "../components/OutputBox.js"
 
 type Props = {
     command: string
