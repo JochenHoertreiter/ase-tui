@@ -4,43 +4,12 @@
 **  Licensed under GPL 3.0 <https://spdx.org/licenses/GPL-3.0-only>
 */
 
-import { useState, useEffect }                  from "react"
-import { Text, useStdout }                      from "ink"
+import { Text }                               from "ink"
 import { Indicator, type IndicatorProps } from "ink-select-input"
 import { Item,      type ItemProps      } from "ink-select-input"
 import { execa }                               from "execa"
 
-/* fixed line count: 1 title + 3 tab-bar (border+content+border) + 1 padding */
-export const HEADER_LINES = 5
-
-/* screen padding applied by every screen container: padding={1} = 1 left + 1 right */
-const SCREEN_PAD_H = 2
-
 export type ActionItem = { label: string, value: string }
-
-export type ScreenDimensions = {
-    contentWidth:  number
-    contentHeight: number
-}
-
-export const useScreen = (): ScreenDimensions => {
-    const { stdout } = useStdout()
-
-    const calc = (): ScreenDimensions => ({
-        contentWidth:  Math.max(1, (stdout.columns ?? 80) - SCREEN_PAD_H),
-        contentHeight: Math.max(1, (stdout.rows    ?? 24) - HEADER_LINES)
-    })
-
-    const [ dims, setDims ] = useState<ScreenDimensions>(calc)
-
-    useEffect(() => {
-        const onResize = () => setDims(calc())
-        stdout.on("resize", onResize)
-        return () => { stdout.off("resize", onResize) }
-    }, [ stdout ])
-
-    return dims
-}
 
 export const runCommand = async (args: string[], onLine: (line: string) => void): Promise<void> => {
     const subprocess = execa("ase", args, {

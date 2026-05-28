@@ -9,13 +9,18 @@ import type { RefObject }                             from "react"
 import { Box, Text, useInput }                        from "ink"
 import Spinner                                        from "ink-spinner"
 import { execa }                                      from "execa"
-import { useScreen, runCommand, type ActionItem }     from "./Screen.js"
+import { runCommand, type ActionItem }                from "./Screen.js"
 import OutputBox                                      from "../components/OutputBox.js"
 import type { HintSegment }                           from "../ase-tui.js"
 
 type Focus = "tasks" | "actions" | "preview" | "rename"
 
-type Props = { escBlockedRef: RefObject<boolean>, onHint: (hint: HintSegment[] | null) => void }
+type Props = {
+    escBlockedRef: RefObject<boolean>
+    onHint:        (hint: HintSegment[] | null) => void
+    screenWidth:   number
+    screenHeight:  number
+}
 
 const TASK_ACTIONS: ActionItem[] = [
     { label: "Switch",  value: "switch"  },
@@ -27,8 +32,7 @@ const TASK_ACTIONS: ActionItem[] = [
 const errMsg = (err: unknown): string =>
     err instanceof Error ? err.message : String(err)
 
-const TaskScreen = ({ escBlockedRef, onHint }: Props) => {
-    const { contentWidth, contentHeight } = useScreen()
+const TaskScreen = ({ escBlockedRef, onHint, screenWidth, screenHeight }: Props) => {
     const [ loading,        setLoading        ] = useState(true)
     const [ currentTask,    setCurrentTask    ] = useState("")
     const [ tasks,          setTasks          ] = useState<Array<{ label: string, value: string }>>([])
@@ -285,8 +289,8 @@ const TaskScreen = ({ escBlockedRef, onHint }: Props) => {
     /* layout: task list | action list | preview */
     const listW    = 24
     const actionsW = 14
-    const previewW = Math.max(1, contentWidth - listW - actionsW)
-    const previewH = Math.max(1, contentHeight - 4)
+    const previewW = Math.max(1, screenWidth  - listW - actionsW)
+    const previewH = Math.max(1, screenHeight - 4)
 
     const taskList = (
         <Box flexDirection='column'>

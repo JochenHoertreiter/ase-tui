@@ -5,6 +5,7 @@
 
 -   IMPROVEMENT: add right-aligned line numbers to `OutputBox` output lines
 -   REFACTOR:    move `OutputBox` component from `screens/` into `components/` folder
+-   REFACTOR:    centralize terminal size calculation in `ase-tui`, pass `screenWidth`/`screenHeight` as props to all screens
 
 ## 0.0.3 (2026-05-28)
 

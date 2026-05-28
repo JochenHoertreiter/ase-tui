@@ -9,16 +9,17 @@ import { Box, Text }           from "ink"
 import SelectInput             from "ink-select-input"
 import Spinner                 from "ink-spinner"
 import { DateTime }            from "luxon"
-import { useScreen, SelectIndicator, SelectItem, runCommand, type ActionItem } from "./Screen.js"
+import { SelectIndicator, SelectItem, runCommand, type ActionItem } from "./Screen.js"
 import OutputBox               from "../components/OutputBox.js"
 
 type Props = {
-    command: string
-    actions: ActionItem[]
+    command:      string
+    actions:      ActionItem[]
+    screenWidth:  number
+    screenHeight: number
 }
 
-const ActionScreen = ({ command, actions }: Props) => {
-    const { contentWidth, contentHeight } = useScreen()
+const ActionScreen = ({ command, actions, screenWidth, screenHeight }: Props) => {
     const [ running,    setRunning    ] = useState(false)
     const [ lines,      setLines      ] = useState<string[]>([])
     const runningRef = useRef(false)
@@ -49,8 +50,8 @@ const ActionScreen = ({ command, actions }: Props) => {
 
     /* left column: fixed width for action list */
     const actionsW = 20
-    const outputW  = Math.max(1, contentWidth - actionsW)
-    const outputH  = Math.max(1, contentHeight)
+    const outputW  = Math.max(1, screenWidth  - actionsW)
+    const outputH  = Math.max(1, screenHeight)
 
     return (
         <Box flexDirection='row' padding={1}>

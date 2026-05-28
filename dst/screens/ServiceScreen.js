@@ -10,14 +10,13 @@ import SelectInput from "ink-select-input";
 import Spinner from "ink-spinner";
 import { execa } from "execa";
 import { DateTime } from "luxon";
-import { useScreen, SelectIndicator, SelectItem, runCommand } from "./Screen.js";
+import { SelectIndicator, SelectItem, runCommand } from "./Screen.js";
 import OutputBox from "../components/OutputBox.js";
 const actions = [
     { label: "Start service", value: "start" },
     { label: "Stop service", value: "stop" }
 ];
-const ServiceScreen = () => {
-    const { contentWidth, contentHeight } = useScreen();
+const ServiceScreen = ({ screenWidth, screenHeight }) => {
     const [statusLoading, setStatusLoading] = useState(true);
     const [status, setStatus] = useState("");
     const [running, setRunning] = useState(false);
@@ -73,12 +72,12 @@ const ServiceScreen = () => {
             setRunning(false);
         }
     };
-    /* header lines: 1 status + 1 blank + 1 spinner/select + 1 padding = 4 */
-    const outputH = Math.max(1, contentHeight - 4);
+    /* own elements: 1 status + 1 blank + 1 spinner/select + 1 padding = 4 */
+    const outputH = Math.max(1, screenHeight - 4);
     return (_jsxs(Box, { flexDirection: 'column', padding: 1, children: [statusLoading ?
                 _jsxs(Text, { children: [_jsx(Spinner, { type: 'dots' }), " Loading status..."] }) :
                 _jsxs(Text, { children: ["Status: ", _jsx(Text, { color: 'green', children: status })] }), _jsx(Text, { children: " " }), running ?
                 _jsxs(Text, { children: [_jsx(Spinner, { type: 'dots' }), " Running..."] }) :
-                _jsx(SelectInput, { items: actions, onSelect: handleSelect, indicatorComponent: SelectIndicator, itemComponent: SelectItem }), _jsx(OutputBox, { lines: lines, active: !running, maxVisible: outputH, contentWidth: contentWidth })] }));
+                _jsx(SelectInput, { items: actions, onSelect: handleSelect, indicatorComponent: SelectIndicator, itemComponent: SelectItem }), _jsx(OutputBox, { lines: lines, active: !running, maxVisible: outputH, contentWidth: screenWidth })] }));
 };
 export default ServiceScreen;

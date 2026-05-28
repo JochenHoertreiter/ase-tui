@@ -12,5 +12,5 @@ const actions = [
     { label: "Enable", value: "enable" },
     { label: "Disable", value: "disable" }
 ];
-const SetupScreen = () => _jsx(ActionScreen, { command: 'setup', actions: actions });
+const SetupScreen = ({ screenWidth, screenHeight }) => _jsx(ActionScreen, { command: 'setup', actions: actions, screenWidth: screenWidth, screenHeight: screenHeight });
 export default SetupScreen;

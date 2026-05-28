@@ -11,7 +11,7 @@ import Spinner                        from "ink-spinner"
 import { DateTime }                   from "luxon"
 import stripAnsi                      from "strip-ansi"
 import { execa }                      from "execa"
-import { useScreen, SelectIndicator, SelectItem, runCommand, type ActionItem } from "./Screen.js"
+import { SelectIndicator, SelectItem, runCommand, type ActionItem } from "./Screen.js"
 import OutputBox                      from "../components/OutputBox.js"
 
 type McpServer = { id: string, name: string }
@@ -39,8 +39,9 @@ const ACTIONS: ActionItem[] = [
     { label: "Deactivate", value: "deactivate" }
 ]
 
-const MCPScreen = () => {
-    const { contentWidth, contentHeight } = useScreen()
+type Props = { screenWidth: number, screenHeight: number }
+
+const MCPScreen = ({ screenWidth, screenHeight }: Props) => {
     const [ loading,    setLoading    ] = useState(true)
     const [ servers,    setServers    ] = useState<McpServer[]>([])
     const [ selected,   setSelected   ] = useState(0)
@@ -108,8 +109,8 @@ const MCPScreen = () => {
     /* layout: server list | action list | output */
     const serversW = 28
     const actionsW = 16
-    const outputW  = Math.max(1, contentWidth - serversW - actionsW)
-    const outputH  = Math.max(1, contentHeight - 2)
+    const outputW  = Math.max(1, screenWidth  - serversW - actionsW)
+    const outputH  = Math.max(1, screenHeight - 2)
 
     return (
         <Box flexDirection='column' padding={1}>

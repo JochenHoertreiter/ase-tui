@@ -10,7 +10,7 @@ import SelectInput                    from "ink-select-input"
 import Spinner                        from "ink-spinner"
 import { execa }                      from "execa"
 import { DateTime }                   from "luxon"
-import { useScreen, SelectIndicator, SelectItem, runCommand, type ActionItem } from "./Screen.js"
+import { SelectIndicator, SelectItem, runCommand, type ActionItem } from "./Screen.js"
 import OutputBox                      from "../components/OutputBox.js"
 
 const actions: ActionItem[] = [
@@ -18,8 +18,9 @@ const actions: ActionItem[] = [
     { label: "Stop service",   value: "stop"   }
 ]
 
-const ServiceScreen = () => {
-    const { contentWidth, contentHeight } = useScreen()
+type Props = { screenWidth: number, screenHeight: number }
+
+const ServiceScreen = ({ screenWidth, screenHeight }: Props) => {
     const [ statusLoading, setStatusLoading ] = useState(true)
     const [ status,        setStatus        ] = useState("")
     const [ running,       setRunning       ] = useState(false)
@@ -78,8 +79,8 @@ const ServiceScreen = () => {
         }
     }
 
-    /* header lines: 1 status + 1 blank + 1 spinner/select + 1 padding = 4 */
-    const outputH = Math.max(1, contentHeight - 4)
+    /* own elements: 1 status + 1 blank + 1 spinner/select + 1 padding = 4 */
+    const outputH = Math.max(1, screenHeight - 4)
 
     return (
         <Box flexDirection='column' padding={1}>
@@ -90,7 +91,7 @@ const ServiceScreen = () => {
             {running ?
                 <Text><Spinner type='dots' /> Running...</Text> :
                 <SelectInput items={actions} onSelect={handleSelect} indicatorComponent={SelectIndicator} itemComponent={SelectItem} />}
-            <OutputBox lines={lines} active={!running} maxVisible={outputH} contentWidth={contentWidth} />
+            <OutputBox lines={lines} active={!running} maxVisible={outputH} contentWidth={screenWidth} />
         </Box>
     )
 }

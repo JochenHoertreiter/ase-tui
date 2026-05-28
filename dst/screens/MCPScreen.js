@@ -11,7 +11,7 @@ import Spinner from "ink-spinner";
 import { DateTime } from "luxon";
 import stripAnsi from "strip-ansi";
 import { execa } from "execa";
-import { useScreen, SelectIndicator, SelectItem, runCommand } from "./Screen.js";
+import { SelectIndicator, SelectItem, runCommand } from "./Screen.js";
 import OutputBox from "../components/OutputBox.js";
 /*  parse "ase setup mcp list" table output into server list  */
 const parseMcpList = (stdout) => {
@@ -34,8 +34,7 @@ const ACTIONS = [
     { label: "Activate", value: "activate" },
     { label: "Deactivate", value: "deactivate" }
 ];
-const MCPScreen = () => {
-    const { contentWidth, contentHeight } = useScreen();
+const MCPScreen = ({ screenWidth, screenHeight }) => {
     const [loading, setLoading] = useState(true);
     const [servers, setServers] = useState([]);
     const [selected, setSelected] = useState(0);
@@ -98,8 +97,8 @@ const MCPScreen = () => {
     /* layout: server list | action list | output */
     const serversW = 28;
     const actionsW = 16;
-    const outputW = Math.max(1, contentWidth - serversW - actionsW);
-    const outputH = Math.max(1, contentHeight - 2);
+    const outputW = Math.max(1, screenWidth - serversW - actionsW);
+    const outputH = Math.max(1, screenHeight - 2);
     return (_jsx(Box, { flexDirection: 'column', padding: 1, children: loading ?
             _jsxs(Text, { children: [_jsx(Spinner, { type: 'dots' }), " Loading MCP servers..."] }) :
             _jsxs(Box, { flexDirection: 'row', children: [_jsxs(Box, { flexDirection: 'column', width: serversW, children: [_jsx(Text, { color: 'blue', children: "MCP Servers" }), _jsx(SelectInput, { items: serverItems, onSelect: handleServerSelect, indicatorComponent: SelectIndicator, itemComponent: SelectItem })] }), _jsxs(Box, { flexDirection: 'column', width: actionsW, children: [_jsx(Text, { color: 'blue', children: "Action" }), running ?

@@ -8,7 +8,7 @@ import { useEffect, useState, useRef } from "react";
 import { Box, Text, useInput } from "ink";
 import Spinner from "ink-spinner";
 import { execa } from "execa";
-import { useScreen, runCommand } from "./Screen.js";
+import { runCommand } from "./Screen.js";
 import OutputBox from "../components/OutputBox.js";
 const TASK_ACTIONS = [
     { label: "Switch", value: "switch" },
@@ -17,8 +17,7 @@ const TASK_ACTIONS = [
     { label: "Purge", value: "purge" }
 ];
 const errMsg = (err) => err instanceof Error ? err.message : String(err);
-const TaskScreen = ({ escBlockedRef, onHint }) => {
-    const { contentWidth, contentHeight } = useScreen();
+const TaskScreen = ({ escBlockedRef, onHint, screenWidth, screenHeight }) => {
     const [loading, setLoading] = useState(true);
     const [currentTask, setCurrentTask] = useState("");
     const [tasks, setTasks] = useState([]);
@@ -265,8 +264,8 @@ const TaskScreen = ({ escBlockedRef, onHint }) => {
     /* layout: task list | action list | preview */
     const listW = 24;
     const actionsW = 14;
-    const previewW = Math.max(1, contentWidth - listW - actionsW);
-    const previewH = Math.max(1, contentHeight - 4);
+    const previewW = Math.max(1, screenWidth - listW - actionsW);
+    const previewH = Math.max(1, screenHeight - 4);
     const taskList = (_jsx(Box, { flexDirection: 'column', children: tasks.map((t, i) => (_jsxs(Text, { color: i === selected ? (focus === "tasks" ? "cyan" : "gray") : "white", children: [i === selected ? _jsx(Text, { color: focus === "tasks" ? "cyan" : "gray", children: "\u276F " }) : "  ", t.label] }, t.value))) }));
     const actionList = (_jsx(Box, { flexDirection: 'column', children: TASK_ACTIONS.map((a, i) => (_jsxs(Text, { color: i === actionIdx ? (focus === "actions" ? "cyan" : "gray") : "white", children: [i === actionIdx ? _jsx(Text, { color: focus === "actions" ? "cyan" : "gray", children: "\u276F " }) : "  ", a.label] }, a.value))) }));
     const taskPanel = (_jsxs(Box, { flexDirection: 'row', children: [_jsxs(Box, { flexDirection: 'column', width: listW, children: [_jsx(Text, { color: focus === "tasks" ? "cyan" : "gray", children: "Tasks" }), taskList] }), _jsxs(Box, { flexDirection: 'column', width: actionsW, children: [_jsx(Text, { color: focus === "actions" ? "cyan" : "gray", children: "Actions" }), focus === "rename" ?

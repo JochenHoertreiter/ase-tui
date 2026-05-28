@@ -9,12 +9,16 @@ import { render, Box, Text, useInput, useApp, useStdout } from "ink"
 import type { ComponentProps }                            from "react"
 import cliTruncate                                        from "cli-truncate"
 
-import ConfigScreen        from "./screens/ConfigScreen.js"
-import ServiceScreen       from "./screens/ServiceScreen.js"
-import TaskScreen          from "./screens/TaskScreen.js"
-import SetupScreen         from "./screens/SetupScreen.js"
-import MCPScreen           from "./screens/MCPScreen.js"
-import { HEADER_LINES }    from "./screens/Screen.js"
+import ConfigScreen  from "./screens/ConfigScreen.js"
+import ServiceScreen from "./screens/ServiceScreen.js"
+import TaskScreen    from "./screens/TaskScreen.js"
+import SetupScreen   from "./screens/SetupScreen.js"
+import MCPScreen     from "./screens/MCPScreen.js"
+
+/* fixed line counts for layout budgeting */
+const HEADER_LINES = 5  /* 1 title + 3 tab-bar (border+content+border) + 1 padding */
+const HINT_LINES   = 1  /* 1 hint bar at bottom */
+const SCREEN_PAD_H = 2  /* padding={1} inside each screen = 1 left + 1 right */
 
 export type HintSegment = { key: string, desc: string }
 
@@ -63,7 +67,9 @@ const App = () => {
         return () => { stdout.off("resize", onResize) }
     }, [ stdout ])
 
-    const contentH = Math.max(1, termH - HEADER_LINES)
+    const screenW  = Math.max(1, termW - SCREEN_PAD_H)
+    const screenH  = Math.max(1, termH - HEADER_LINES - HINT_LINES)
+    const contentH = screenH + HINT_LINES
 
     useInput((input, key) => {
         if ((input === "q" || input === "Q" || key.escape) && !escBlockedRef.current)
@@ -112,11 +118,11 @@ const App = () => {
                 </Box>
             </Box>
             <Box height={contentH}>
-                {screen === "config"  && <ConfigScreen />}
-                {screen === "service" && <ServiceScreen />}
-                {screen === "task"    && <TaskScreen escBlockedRef={escBlockedRef} onHint={onHintCb} />}
-                {screen === "setup"   && <SetupScreen />}
-                {screen === "mcp"     && <MCPScreen />}
+                {screen === "config"  && <ConfigScreen screenWidth={screenW} screenHeight={screenH} />}
+                {screen === "service" && <ServiceScreen screenWidth={screenW} screenHeight={screenH} />}
+                {screen === "task"    && <TaskScreen escBlockedRef={escBlockedRef} onHint={onHintCb} screenWidth={screenW} screenHeight={screenH} />}
+                {screen === "setup"   && <SetupScreen screenWidth={screenW} screenHeight={screenH} />}
+                {screen === "mcp"     && <MCPScreen screenWidth={screenW} screenHeight={screenH} />}
             </Box>
             <Box position='absolute' bottom={0} right={1} width={termW}>
                 <Box flexGrow={1} />

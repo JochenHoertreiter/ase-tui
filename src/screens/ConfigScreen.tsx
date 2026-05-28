@@ -67,7 +67,9 @@ const pad = (s: string, w: number): string =>
 
 type ConfigMode = "view" | "edit" | "preset"
 
-const ConfigScreen = () => {
+type Props = { screenWidth: number, screenHeight: number }
+
+const ConfigScreen = ({ screenWidth: _screenWidth, screenHeight: _screenHeight }: Props) => {
     const [ loading,     setLoading     ] = useState(true)
     const [ rows,        setRows        ] = useState<ConfigRow[]>([])
     const [ error,       setError       ] = useState("")

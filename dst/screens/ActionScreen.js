@@ -9,10 +9,9 @@ import { Box, Text } from "ink";
 import SelectInput from "ink-select-input";
 import Spinner from "ink-spinner";
 import { DateTime } from "luxon";
-import { useScreen, SelectIndicator, SelectItem, runCommand } from "./Screen.js";
+import { SelectIndicator, SelectItem, runCommand } from "./Screen.js";
 import OutputBox from "../components/OutputBox.js";
-const ActionScreen = ({ command, actions }) => {
-    const { contentWidth, contentHeight } = useScreen();
+const ActionScreen = ({ command, actions, screenWidth, screenHeight }) => {
     const [running, setRunning] = useState(false);
     const [lines, setLines] = useState([]);
     const runningRef = useRef(false);
@@ -41,8 +40,8 @@ const ActionScreen = ({ command, actions }) => {
     };
     /* left column: fixed width for action list */
     const actionsW = 20;
-    const outputW = Math.max(1, contentWidth - actionsW);
-    const outputH = Math.max(1, contentHeight);
+    const outputW = Math.max(1, screenWidth - actionsW);
+    const outputH = Math.max(1, screenHeight);
     return (_jsxs(Box, { flexDirection: 'row', padding: 1, children: [_jsx(Box, { flexDirection: 'column', width: actionsW, children: running ?
                     _jsxs(Text, { children: [_jsx(Spinner, { type: 'dots' }), " Running..."] }) :
                     _jsx(SelectInput, { items: actions, onSelect: handleSelect, indicatorComponent: SelectIndicator, itemComponent: SelectItem }) }), _jsx(OutputBox, { lines: lines, active: !running, maxVisible: outputH, contentWidth: outputW })] }));

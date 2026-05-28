@@ -14,7 +14,9 @@ const actions = [
     { label: "Disable",   value: "disable"   }
 ]
 
-const SetupScreen = () =>
-    <ActionScreen command='setup' actions={actions} />
+type Props = { screenWidth: number, screenHeight: number }
+
+const SetupScreen = ({ screenWidth, screenHeight }: Props) =>
+    <ActionScreen command='setup' actions={actions} screenWidth={screenWidth} screenHeight={screenHeight} />
 
 export default SetupScreen

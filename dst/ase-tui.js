@@ -12,7 +12,10 @@ import ServiceScreen from "./screens/ServiceScreen.js";
 import TaskScreen from "./screens/TaskScreen.js";
 import SetupScreen from "./screens/SetupScreen.js";
 import MCPScreen from "./screens/MCPScreen.js";
-import { HEADER_LINES } from "./screens/Screen.js";
+/* fixed line counts for layout budgeting */
+const HEADER_LINES = 5; /* 1 title + 3 tab-bar (border+content+border) + 1 padding */
+const HINT_LINES = 1; /* 1 hint bar at bottom */
+const SCREEN_PAD_H = 2; /* padding={1} inside each screen = 1 left + 1 right */
 /* tab border styles */
 const BORDER_ACTIVE = {
     topLeft: "╭", top: "─", topRight: "╮",
@@ -49,7 +52,9 @@ const App = () => {
         stdout.on("resize", onResize);
         return () => { stdout.off("resize", onResize); };
     }, [stdout]);
-    const contentH = Math.max(1, termH - HEADER_LINES);
+    const screenW = Math.max(1, termW - SCREEN_PAD_H);
+    const screenH = Math.max(1, termH - HEADER_LINES - HINT_LINES);
+    const contentH = screenH + HINT_LINES;
     useInput((input, key) => {
         if ((input === "q" || input === "Q" || key.escape) && !escBlockedRef.current)
             exit();
@@ -71,6 +76,6 @@ const App = () => {
     const onHintCb = useCallback((s) => setHint(s ? [...s, ...BASE_HINT] : BASE_HINT), [setHint]);
     return (_jsxs(Box, { flexDirection: 'column', width: termW, height: termH, children: [_jsx(Box, { paddingLeft: 1, children: _jsx(Text, { bold: true, color: 'cyan', children: cliTruncate(TITLE, innerW) }) }), _jsxs(Box, { flexDirection: 'row', paddingLeft: 1, children: [tabs.map((t, i) => i === tab ?
                         _jsx(Box, { borderStyle: BORDER_ACTIVE, borderColor: 'gray', paddingLeft: 1, paddingRight: 1, children: _jsx(Text, { color: 'cyan', children: t.label }) }, t.value) :
-                        _jsx(Box, { borderStyle: BORDER_INACTIVE, borderColor: 'gray', paddingLeft: 1, paddingRight: 1, children: _jsx(Text, { color: 'gray', children: t.label }) }, t.value)), _jsx(Box, { alignSelf: 'flex-end', children: _jsx(Text, { color: 'gray', children: "─".repeat(restW) }) })] }), _jsxs(Box, { height: contentH, children: [screen === "config" && _jsx(ConfigScreen, {}), screen === "service" && _jsx(ServiceScreen, {}), screen === "task" && _jsx(TaskScreen, { escBlockedRef: escBlockedRef, onHint: onHintCb }), screen === "setup" && _jsx(SetupScreen, {}), screen === "mcp" && _jsx(MCPScreen, {})] }), _jsxs(Box, { position: 'absolute', bottom: 0, right: 1, width: termW, children: [_jsx(Box, { flexGrow: 1 }), hint.map((s, i) => _jsxs(Text, { children: [_jsx(Text, { bold: true, color: 'cyan', children: s.key }), _jsxs(Text, { color: 'white', children: [" ", s.desc] }), i < hint.length - 1 ? _jsx(Text, { color: 'gray', children: "   " }) : null] }, i))] })] }));
+                        _jsx(Box, { borderStyle: BORDER_INACTIVE, borderColor: 'gray', paddingLeft: 1, paddingRight: 1, children: _jsx(Text, { color: 'gray', children: t.label }) }, t.value)), _jsx(Box, { alignSelf: 'flex-end', children: _jsx(Text, { color: 'gray', children: "─".repeat(restW) }) })] }), _jsxs(Box, { height: contentH, children: [screen === "config" && _jsx(ConfigScreen, { screenWidth: screenW, screenHeight: screenH }), screen === "service" && _jsx(ServiceScreen, { screenWidth: screenW, screenHeight: screenH }), screen === "task" && _jsx(TaskScreen, { escBlockedRef: escBlockedRef, onHint: onHintCb, screenWidth: screenW, screenHeight: screenH }), screen === "setup" && _jsx(SetupScreen, { screenWidth: screenW, screenHeight: screenH }), screen === "mcp" && _jsx(MCPScreen, { screenWidth: screenW, screenHeight: screenH })] }), _jsxs(Box, { position: 'absolute', bottom: 0, right: 1, width: termW, children: [_jsx(Box, { flexGrow: 1 }), hint.map((s, i) => _jsxs(Text, { children: [_jsx(Text, { bold: true, color: 'cyan', children: s.key }), _jsxs(Text, { color: 'white', children: [" ", s.desc] }), i < hint.length - 1 ? _jsx(Text, { color: 'gray', children: "   " }) : null] }, i))] })] }));
 };
 render(_jsx(App, {}), { alternateScreen: true });

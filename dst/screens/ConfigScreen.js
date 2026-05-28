@@ -49,7 +49,7 @@ const buildRows = (userMap, projectMap) => {
 };
 const COL_W = { key: 16, default: 12, user: 12, project: 12 };
 const pad = (s, w) => s.length >= w ? s.slice(0, w) : s + " ".repeat(w - s.length);
-const ConfigScreen = () => {
+const ConfigScreen = ({ screenWidth: _screenWidth, screenHeight: _screenHeight }) => {
     const [loading, setLoading] = useState(true);
     const [rows, setRows] = useState([]);
     const [error, setError] = useState("");
