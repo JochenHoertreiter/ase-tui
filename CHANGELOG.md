@@ -1,9 +1,23 @@
 
 # ChangeLog
 
-## 0.0.3 (2026-05-27)
+## 0.0.4 (2026-05-28)
+
+
+## 0.0.3 (2026-05-28)
 
 -   IMPROVEMENT: differentiate hint bar keystroke and description colors via `HintSegment`
+-   IMPROVEMENT: memoize `onHint` callback via `useCallback` to avoid unnecessary re-renders
+-   IMPROVEMENT: load task preview on demand instead of eagerly on task selection
+-   IMPROVEMENT: show spinner in preview header while asynchronously loading preview content
+-   IMPROVEMENT: guard `switch`/`delete` actions with `running`/`runningRef` to block concurrent ops
+-   BUGFIX:      use `runningRef.current` in `useInput` to avoid stale-closure on `running` state
+-   BUGFIX:      clamp `selected` index to valid range after purge empties the task list
+-   BUGFIX:      change `else if` to `if` for `actions`/`preview` branches in `useInput`
+-   REFACTOR:    remove `Mode` type; integrate `"rename"` directly into `Focus` union type
+-   REFACTOR:    extract `errMsg()` helper to deduplicate error-message string coercion
+-   CLEANUP:     correct hint-bar key symbols (`◀ ▶`→`← →`, `Q`→`q`, `P`→`p`)
+-   CLEANUP:     remove inline rename hint text; hint bar now covers rename instructions
 
 ## 0.0.2 (2026-05-27)
 
