@@ -3,6 +3,7 @@
 
 ## 0.0.4 (2026-05-28)
 
+-   IMPROVEMENT: add right-aligned line numbers to `OutputBox` output lines
 
 ## 0.0.3 (2026-05-28)
 

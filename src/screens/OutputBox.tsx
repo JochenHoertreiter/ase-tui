@@ -7,6 +7,14 @@
 import { useEffect, useState, useMemo } from "react"
 import { Box, Text, useInput } from "ink"
 import wrapAnsi                from "wrap-ansi"
+import fs                      from "node:fs"
+import path                    from "node:path"
+
+const logFile = path.resolve("outputbox.log")
+const logDebug = (data: object) => {
+    const line = JSON.stringify({ ts: Date.now(), ...data }) + "\n"
+    fs.appendFileSync(logFile, line, "utf8")
+}
 
 type Props = {
     lines:        string[]
@@ -19,8 +27,11 @@ type Props = {
 const OutputBox = ({ lines, active, maxVisible, contentWidth, borderColor = "cyan" }: Props) => {
     const [ offset, setOffset ] = useState(0)
 
-    /* inner width: contentWidth minus 1 left border, 1 left padding, 1 right scrollbar/border */
-    const innerW = Math.max(1, contentWidth - 3)
+    /* number column width derived from original line count (upper bound for wrapped count) */
+    const numW = Math.max(1, lines.length).toString().length
+
+    /* inner width: contentWidth minus 1 left border, 1 left padding, 1 right scrollbar/border, numW+1 for line number column */
+    const innerW = Math.max(1, contentWidth - 3 - (numW + 1))
 
     /* wrap each raw line to innerW, preserving ANSI codes */
     const wrapped = useMemo(() => {
@@ -66,17 +77,22 @@ const OutputBox = ({ lines, active, maxVisible, contentWidth, borderColor = "cya
         Math.round((offset / maxOffset) * (barHeight - 1)) :
         0
 
+    logDebug({ lines: lines.length, contentWidth, innerW, total, maxVisible, needBar, offset, maxOffset, thumbPos, barHeight })
+
     return (
         <Box flexDirection='row' borderStyle='round' borderColor={borderColor} width={contentWidth}>
             <Box flexDirection='column' flexGrow={1} paddingLeft={1}>
                 {visible.map((line, i) =>
-                    <Text key={offset + i}>{line}</Text>
+                    <Box key={offset + i} flexDirection='row'>
+                        <Text color='dim'>{String(offset + i + 1).padStart(numW)} </Text>
+                        <Text>{line}</Text>
+                    </Box>
                 )}
             </Box>
             {needBar ?
                 <Box flexDirection='column' width={1}>
                     {[ ...Array(barHeight).keys() ].map((i) =>
-                        <Text key={i} color='cyan'>{i === thumbPos ? "█" : "│"}</Text>
+                        <Text key={i === thumbPos ? "thumb" : i} color='cyan'>{i === thumbPos ? "█" : "│"}</Text>
                     )}
                 </Box> :
                 null}
