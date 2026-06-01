@@ -1,6 +1,6 @@
 /*
-**  Agentic Software Engineering (ASE)
-**  Copyright (c) 2025-2026 Dr. Ralf S. Engelschall <rse@engelschall.com>
+**  Agentic Software Engineering (ASE) - Terminal User Interface (TUI)
+**  Copyright (c) 2026 Jochen Hörtreiter <Jochen.Hoertreiter@googlemail.com>
 **  Licensed under GPL 3.0 <https://spdx.org/licenses/GPL-3.0-only>
 */
 
@@ -15,11 +15,12 @@ import OutputBox               from "../components/OutputBox.js"
 type Props = {
     command:      string
     actions:      ActionItem[]
+    listHeader?:  string
     screenWidth:  number
     screenHeight: number
 }
 
-const ActionScreen = ({ command, actions, screenWidth, screenHeight }: Props) => {
+const ActionScreen = ({ command, actions, listHeader, screenWidth, screenHeight }: Props) => {
     const [ running,    setRunning    ] = useState(false)
     const [ lines,      setLines      ] = useState<string[]>([])
     const runningRef = useRef(false)
@@ -56,6 +57,8 @@ const ActionScreen = ({ command, actions, screenWidth, screenHeight }: Props) =>
     return (
         <Box flexDirection='row' padding={1}>
             <Box flexDirection='column' width={actionsW}>
+                {listHeader !== undefined ?
+                    <Text color={running ? "gray" : "cyan"}>{listHeader}</Text> : null}
                 {running ?
                     <Text><Spinner type='dots' /> Running...</Text> :
                     <SelectInput items={actions} onSelect={handleSelect} indicatorComponent={SelectIndicator} itemComponent={SelectItem} />}

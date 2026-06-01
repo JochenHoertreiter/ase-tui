@@ -1,6 +1,6 @@
 /*
-**  Agentic Software Engineering (ASE)
-**  Copyright (c) 2025-2026 Dr. Ralf S. Engelschall <rse@engelschall.com>
+**  Agentic Software Engineering (ASE) - Terminal User Interface (TUI)
+**  Copyright (c) 2026 Jochen Hörtreiter <Jochen.Hoertreiter@googlemail.com>
 **  Licensed under GPL 3.0 <https://spdx.org/licenses/GPL-3.0-only>
 */
 
@@ -17,6 +17,6 @@ const actions = [
 type Props = { screenWidth: number, screenHeight: number }
 
 const SetupScreen = ({ screenWidth, screenHeight }: Props) =>
-    <ActionScreen command='setup' actions={actions} screenWidth={screenWidth} screenHeight={screenHeight} />
+    <ActionScreen command='setup' actions={actions} listHeader='Commands' screenWidth={screenWidth} screenHeight={screenHeight} />
 
 export default SetupScreen
