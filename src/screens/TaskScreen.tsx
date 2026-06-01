@@ -11,7 +11,7 @@ import Spinner                                        from "ink-spinner"
 import { execa }                                      from "execa"
 import { runCommand, type ActionItem }                from "./Screen.js"
 import OutputBox                                      from "../components/OutputBox.js"
-import type { HintSegment }                           from "../ase-tui.js"
+import type { HintSegment }                           from "../components/HintBar.js"
 
 type Focus = "tasks" | "actions" | "preview" | "rename"
 

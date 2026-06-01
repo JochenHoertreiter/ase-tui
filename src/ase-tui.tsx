@@ -14,13 +14,12 @@ import ServiceScreen from "./screens/ServiceScreen.js"
 import TaskScreen    from "./screens/TaskScreen.js"
 import SetupScreen   from "./screens/SetupScreen.js"
 import MCPScreen     from "./screens/MCPScreen.js"
+import HintBar, { type HintSegment } from "./components/HintBar.js"
 
 /* fixed line counts for layout budgeting */
 const HEADER_LINES = 5  /* 1 title + 3 tab-bar (border+content+border) + 1 padding */
 const HINT_LINES   = 1  /* 1 hint bar at bottom */
 const SCREEN_PAD_H = 2  /* padding={1} inside each screen = 1 left + 1 right */
-
-export type HintSegment = { key: string, desc: string }
 
 type Screen = "config" | "service" | "task" | "setup" | "mcp"
 
@@ -124,16 +123,7 @@ const App = () => {
                 {screen === "setup"   && <SetupScreen screenWidth={screenW} screenHeight={screenH} />}
                 {screen === "mcp"     && <MCPScreen screenWidth={screenW} screenHeight={screenH} />}
             </Box>
-            <Box position='absolute' bottom={0} right={1} width={termW}>
-                <Box flexGrow={1} />
-                {hint.map((s, i) =>
-                    <Text key={i}>
-                        <Text bold color='cyan'>{s.key}</Text>
-                        <Text color='white'> {s.desc}</Text>
-                        {i < hint.length - 1 ? <Text color='gray'>   </Text> : null}
-                    </Text>
-                )}
-            </Box>
+            <HintBar hint={hint} width={termW} />
         </Box>
     )
 }
