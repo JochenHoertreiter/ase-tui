@@ -31,6 +31,8 @@ const parseMcpList = (stdout) => {
     }
     return servers;
 };
+const APPENDIX_GAP = 2;
+const SUFFIX_GAP = 3;
 const ACTIONS = [
     { label: "Activate", value: "activate" },
     { label: "Deactivate", value: "deactivate" }
@@ -119,8 +121,11 @@ const MCPScreen = ({ screenWidth, screenHeight }) => {
         }
     });
     /* layout: server list | action list | output */
-    const serversW = 28;
     const actionsW = 16;
+    /* grow server column to widest label (incl. cursor padding), capped at 80 and clamped to leave room for output */
+    const labels = ["MCP Servers", ...serverItems.map((s) => s.label)];
+    const widest = labels.reduce((m, l) => Math.max(m, l.length), 0);
+    const serversW = Math.min(80, Math.max(28, APPENDIX_GAP + widest + SUFFIX_GAP), Math.max(28, screenWidth - actionsW - 10));
     const outputW = Math.max(1, screenWidth - serversW - actionsW);
     const outputH = Math.max(1, screenHeight - 2);
     return (_jsx(Box, { flexDirection: 'column', padding: 1, children: loading ?
