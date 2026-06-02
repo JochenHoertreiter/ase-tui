@@ -27,31 +27,37 @@ type Props = {
 const OutputBox = ({ lines, active, maxVisible, contentWidth, borderColor = "cyan" }: Props) => {
     const [ offset, setOffset ] = useState(0)
 
-    /* number column width derived from original line count (upper bound for wrapped count) */
+    /* number column width derived from the highest source line number */
     const numW = Math.max(1, lines.length).toString().length
 
-    /* inner width: contentWidth minus 1 left border, 1 left padding, 1 right scrollbar/border, numW+1 for line number column */
-    const innerW = Math.max(1, contentWidth - 3 - (numW + 1))
+    /* inner width: contentWidth minus 2 borders, 1 left padding, 1 right scrollbar, numW+1 for line number column */
+    const innerW = Math.max(1, contentWidth - 2 - 1 - 1 - (numW + 1))
 
-    /* wrap each raw line to innerW, preserving ANSI codes */
+    /* wrap each raw line to innerW, preserving ANSI codes; remember source line number,
+       and whether a wrapped segment is a continuation (so it gets no own line number) */
     const wrapped = useMemo(() => {
-        const result: string[] = []
-        for (const line of lines)
-            for (const wl of wrapAnsi(line, innerW, { hard: true, trim: false, wordWrap: false }).split("\n"))
-                result.push(wl)
+        const result: { text: string, num: number, cont: boolean }[] = []
+        lines.forEach((line, idx) => {
+            const segs = wrapAnsi(line, innerW, { hard: true, trim: false, wordWrap: false }).split("\n")
+            segs.forEach((seg, si) =>
+                result.push({ text: seg, num: idx + 1, cont: si > 0 }))
+        })
         return result
     }, [ lines, innerW ])
 
     const total   = wrapped.length
-    const needBar = total > maxVisible
+
+    /* inner height: maxVisible is the total component height, minus 2 border rows */
+    const innerH  = Math.max(1, maxVisible - 2)
+    const needBar = total > innerH
 
     /* auto-scroll to bottom when new lines arrive and user is at bottom */
     useEffect(() => {
         setOffset((o) => {
-            const maxOffset = Math.max(0, total - maxVisible)
+            const maxOffset = Math.max(0, total - innerH)
             return o >= maxOffset ? maxOffset : o
         })
-    }, [ total, maxVisible ])
+    }, [ total, innerH ])
 
     useInput((_input, key) => {
         if (!active || !needBar)
@@ -59,40 +65,42 @@ const OutputBox = ({ lines, active, maxVisible, contentWidth, borderColor = "cya
         if (key.upArrow)
             setOffset((o) => Math.max(0, o - 1))
         else if (key.downArrow)
-            setOffset((o) => Math.min(Math.max(0, total - maxVisible), o + 1))
+            setOffset((o) => Math.min(Math.max(0, total - innerH), o + 1))
         else if (key.pageUp)
-            setOffset((o) => Math.max(0, o - maxVisible))
+            setOffset((o) => Math.max(0, o - innerH))
         else if (key.pageDown)
-            setOffset((o) => Math.min(Math.max(0, total - maxVisible), o + maxVisible))
+            setOffset((o) => Math.min(Math.max(0, total - innerH), o + innerH))
     })
 
     if (total === 0)
         return null
 
-    const visible = wrapped.slice(offset, offset + maxVisible)
+    const visible = wrapped.slice(offset, offset + innerH)
 
-    const maxOffset  = Math.max(0, total - maxVisible)
-    const barHeight  = maxVisible
+    const maxOffset  = Math.max(0, total - innerH)
+    const barHeight  = innerH
     const thumbPos   = maxOffset > 0 ?
-        Math.round((offset / maxOffset) * (barHeight - 1)) :
+        Math.min(barHeight - 1, Math.round((offset / maxOffset) * (barHeight - 1))) :
         0
 
-    logDebug({ lines: lines.length, contentWidth, innerW, total, maxVisible, needBar, offset, maxOffset, thumbPos, barHeight })
+    logDebug({ lines: lines.length, contentWidth, innerW, innerH, total, maxVisible, needBar, offset, maxOffset, thumbPos, barHeight })
 
     return (
-        <Box flexDirection='row' borderStyle='round' borderColor={borderColor} width={contentWidth}>
+        <Box flexDirection='row' borderStyle='round' borderColor={borderColor} width={contentWidth} height={maxVisible}>
             <Box flexDirection='column' flexGrow={1} paddingLeft={1}>
                 {visible.map((line, i) =>
-                    <Box key={offset + i} flexDirection='row'>
-                        <Text color='dim'>{String(offset + i + 1).padStart(numW)} </Text>
-                        <Text>{line}</Text>
+                    <Box key={i} flexDirection='row'>
+                        <Box width={numW + 1} flexShrink={0}>
+                            <Text dimColor>{line.cont ? "" : String(line.num).padStart(numW)}</Text>
+                        </Box>
+                        <Text>{line.text}</Text>
                     </Box>
                 )}
             </Box>
             {needBar ?
-                <Box flexDirection='column' width={1}>
+                <Box flexDirection='column' width={1} flexShrink={0}>
                     {[ ...Array(barHeight).keys() ].map((i) =>
-                        <Text key={i === thumbPos ? "thumb" : i} color='cyan'>{i === thumbPos ? "█" : "│"}</Text>
+                        <Text key={i} color='cyan'>{i === thumbPos ? "█" : "│"}</Text>
                     )}
                 </Box> :
                 null}
