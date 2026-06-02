@@ -5,14 +5,14 @@
 */
 
 import { useEffect, useState, useRef } from "react"
-import { Box, Text }                  from "ink"
-import SelectInput                    from "ink-select-input"
-import Spinner                        from "ink-spinner"
-import { execa }                      from "execa"
-import { DateTime }                   from "luxon"
-import { SelectIndicator, SelectItem, runCommand, type ActionItem } from "./Screen.js"
-import OutputBox                      from "../components/OutputBox.js"
-import { logError }                  from "../components/Logger.js"
+import { Box, Text, useInput }         from "ink"
+import Spinner                         from "ink-spinner"
+import { execa }                       from "execa"
+import { DateTime }                    from "luxon"
+import { runCommand, type ActionItem } from "./Screen.js"
+import OutputBox                       from "../components/OutputBox.js"
+import SelectList                      from "../components/SelectList.js"
+import { logError }                    from "../components/Logger.js"
 
 const actions: ActionItem[] = [
     { label: "Start service",  value: "start"  },
@@ -25,6 +25,7 @@ const ServiceScreen = ({ screenWidth, screenHeight }: Props) => {
     const [ statusLoading, setStatusLoading ] = useState(true)
     const [ status,        setStatus        ] = useState("")
     const [ running,       setRunning       ] = useState(false)
+    const [ selected,      setSelected      ] = useState(0)
     const [ lines,         setLines         ] = useState<string[]>([])
     const runningRef = useRef(false)
 
@@ -80,6 +81,17 @@ const ServiceScreen = ({ screenWidth, screenHeight }: Props) => {
         }
     }
 
+    useInput((_input, key) => {
+        if (runningRef.current)
+            return
+        if (key.upArrow)
+            setSelected((s) => Math.max(0, s - 1))
+        else if (key.downArrow)
+            setSelected((s) => Math.min(actions.length - 1, s + 1))
+        else if (key.return)
+            handleSelect(actions[selected]).catch(() => {})
+    })
+
     /* own elements: 1 status + 1 blank + 1 spinner/select + 1 padding = 4 */
     const outputH = Math.max(1, screenHeight - 4)
 
@@ -91,7 +103,7 @@ const ServiceScreen = ({ screenWidth, screenHeight }: Props) => {
             <Text> </Text>
             {running ?
                 <Text><Spinner type='dots' /> Running...</Text> :
-                <SelectInput items={actions} onSelect={handleSelect} indicatorComponent={SelectIndicator} itemComponent={SelectItem} />}
+                <SelectList items={actions} selectedIndex={selected} isFocused />}
             <OutputBox lines={lines} active={!running} maxVisible={outputH} contentWidth={screenWidth} />
         </Box>
     )

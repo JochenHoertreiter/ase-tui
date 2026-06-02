@@ -4,9 +4,6 @@
 **  Licensed under GPL 3.0 <https://spdx.org/licenses/GPL-3.0-only>
 */
 
-import { Text }                               from "ink"
-import { Indicator, type IndicatorProps } from "ink-select-input"
-import { Item,      type ItemProps      } from "ink-select-input"
 import { execa }                               from "execa"
 
 export type ActionItem = { label: string, value: string }
@@ -30,11 +27,3 @@ export const runCommand = async (args: string[], onLine: (line: string) => void)
         subprocess.stderr?.off("data", onData)
     }
 }
-
-export const SelectIndicator = ({ isSelected }: IndicatorProps) =>
-    <Indicator isSelected={isSelected} />
-
-export const SelectItem = ({ isSelected, label }: ItemProps) =>
-    isSelected ?
-        <Text color='cyan'>{label}</Text> :
-        <Item isSelected={isSelected} label={label} />

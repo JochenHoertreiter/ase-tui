@@ -5,14 +5,14 @@ import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
 **  Licensed under GPL 3.0 <https://spdx.org/licenses/GPL-3.0-only>
 */
 import { useEffect, useState, useRef } from "react";
-import { Box, Text } from "ink";
-import SelectInput from "ink-select-input";
+import { Box, Text, useInput } from "ink";
 import Spinner from "ink-spinner";
 import { DateTime } from "luxon";
 import stripAnsi from "strip-ansi";
 import { execa } from "execa";
-import { SelectIndicator, SelectItem, runCommand } from "./Screen.js";
+import { runCommand } from "./Screen.js";
 import OutputBox from "../components/OutputBox.js";
+import SelectList from "../components/SelectList.js";
 import { logError } from "../components/Logger.js";
 /*  parse "ase setup mcp list" table output into server list  */
 const parseMcpList = (stdout) => {
@@ -39,6 +39,8 @@ const MCPScreen = ({ screenWidth, screenHeight }) => {
     const [loading, setLoading] = useState(true);
     const [servers, setServers] = useState([]);
     const [selected, setSelected] = useState(0);
+    const [selectedAction, setSelectedAction] = useState(0);
+    const [focus, setFocus] = useState("servers");
     const [running, setRunning] = useState(false);
     const [lines, setLines] = useState([]);
     const runningRef = useRef(false);
@@ -66,9 +68,6 @@ const MCPScreen = ({ screenWidth, screenHeight }) => {
         label: `[${s.id}] ${s.name}`,
         value: String(i)
     }));
-    const handleServerSelect = (item) => {
-        setSelected(Number(item.value));
-    };
     const handleActionSelect = async (item) => {
         if (runningRef.current)
             return;
@@ -95,6 +94,30 @@ const MCPScreen = ({ screenWidth, screenHeight }) => {
             setRunning(false);
         }
     };
+    useInput((_input, key) => {
+        if (runningRef.current)
+            return;
+        if (focus === "servers") {
+            if (key.upArrow)
+                setSelected((s) => Math.max(0, s - 1));
+            else if (key.downArrow)
+                setSelected((s) => Math.min(servers.length - 1, s + 1));
+            else if (key.return && servers.length > 0)
+                setFocus("actions");
+        }
+        else if (focus === "actions") {
+            if (key.upArrow)
+                setSelectedAction((i) => Math.max(0, i - 1));
+            else if (key.downArrow)
+                setSelectedAction((i) => Math.min(ACTIONS.length - 1, i + 1));
+            else if (key.escape)
+                setFocus("servers");
+            else if (key.return)
+                handleActionSelect(ACTIONS[selectedAction]).catch((e) => {
+                    logError("MCPScreen", "unexpected", e);
+                });
+        }
+    });
     /* layout: server list | action list | output */
     const serversW = 28;
     const actionsW = 16;
@@ -102,8 +125,8 @@ const MCPScreen = ({ screenWidth, screenHeight }) => {
     const outputH = Math.max(1, screenHeight - 2);
     return (_jsx(Box, { flexDirection: 'column', padding: 1, children: loading ?
             _jsxs(Text, { children: [_jsx(Spinner, { type: 'dots' }), " Loading MCP servers..."] }) :
-            _jsxs(Box, { flexDirection: 'row', children: [_jsxs(Box, { flexDirection: 'column', width: serversW, children: [_jsx(Text, { color: 'blue', children: "MCP Servers" }), _jsx(SelectInput, { items: serverItems, onSelect: handleServerSelect, indicatorComponent: SelectIndicator, itemComponent: SelectItem })] }), _jsxs(Box, { flexDirection: 'column', width: actionsW, children: [_jsx(Text, { color: 'blue', children: "Action" }), running ?
-                                _jsxs(Text, { children: [_jsx(Spinner, { type: 'dots' }), " Running..."] }) :
-                                _jsx(SelectInput, { items: ACTIONS, onSelect: handleActionSelect, indicatorComponent: SelectIndicator, itemComponent: SelectItem })] }), _jsx(OutputBox, { lines: lines, active: !running, maxVisible: outputH, contentWidth: outputW })] }) }));
+            _jsxs(Box, { flexDirection: 'row', children: [_jsx(Box, { flexDirection: 'column', width: serversW, children: _jsx(SelectList, { items: serverItems, selectedIndex: selected, isFocused: focus === "servers", header: 'MCP Servers' }) }), _jsx(Box, { flexDirection: 'column', width: actionsW, children: running ?
+                            _jsxs(Box, { flexDirection: 'column', children: [_jsx(Text, { color: 'gray', children: "Action" }), _jsxs(Text, { children: [_jsx(Spinner, { type: 'dots' }), " Running..."] })] }) :
+                            _jsx(SelectList, { items: ACTIONS, selectedIndex: selectedAction, isFocused: focus === "actions", header: 'Action' }) }), _jsx(OutputBox, { lines: lines, active: !running, maxVisible: outputH, contentWidth: outputW })] }) }));
 };
 export default MCPScreen;

@@ -10,6 +10,7 @@ import Spinner from "ink-spinner";
 import { execa } from "execa";
 import { runCommand } from "./Screen.js";
 import OutputBox from "../components/OutputBox.js";
+import SelectList from "../components/SelectList.js";
 import { logError } from "../components/Logger.js";
 const TASK_ACTIONS = [
     { label: "Switch", value: "switch" },
@@ -267,13 +268,11 @@ const TaskScreen = ({ escBlockedRef, onHint, screenWidth, screenHeight }) => {
     const actionsW = 14;
     const previewW = Math.max(1, screenWidth - listW - actionsW);
     const previewH = Math.max(1, screenHeight - 4);
-    const taskList = (_jsx(Box, { flexDirection: 'column', children: tasks.map((t, i) => (_jsxs(Text, { color: i === selected ? (focus === "tasks" ? "cyan" : "gray") : "white", children: [i === selected ? _jsx(Text, { color: focus === "tasks" ? "cyan" : "gray", children: "\u276F " }) : "  ", t.label] }, t.value))) }));
-    const actionList = (_jsx(Box, { flexDirection: 'column', children: TASK_ACTIONS.map((a, i) => (_jsxs(Text, { color: i === actionIdx ? (focus === "actions" ? "cyan" : "gray") : "white", children: [i === actionIdx ? _jsx(Text, { color: focus === "actions" ? "cyan" : "gray", children: "\u276F " }) : "  ", a.label] }, a.value))) }));
-    const taskPanel = (_jsxs(Box, { flexDirection: 'row', children: [_jsxs(Box, { flexDirection: 'column', width: listW, children: [_jsx(Text, { color: focus === "tasks" ? "cyan" : "gray", children: "Tasks" }), taskList] }), _jsxs(Box, { flexDirection: 'column', width: actionsW, children: [_jsx(Text, { color: focus === "actions" ? "cyan" : "gray", children: "Actions" }), focus === "rename" ?
-                        _jsxs(Box, { flexDirection: 'column', children: [_jsx(Text, { color: 'cyan', children: "New name:" }), _jsxs(Text, { color: 'white', children: [renameVal, _jsx(Text, { color: 'cyan', children: "\u2588" })] })] }) :
-                        running ?
-                            _jsx(Spinner, { type: 'dots' }) :
-                            actionList] }), _jsxs(Box, { flexDirection: 'column', width: previewW, children: [_jsx(Text, { color: focus === "preview" ? "cyan" : "gray", children: previewLoading ? _jsxs(_Fragment, { children: [_jsx(Spinner, { type: 'dots' }), " loading"] }) : "Task Preview" }), _jsx(OutputBox, { lines: preview, active: focus === "preview", maxVisible: previewH, contentWidth: previewW, borderColor: focus === "preview" ? "cyan" : "gray" })] })] }));
+    const taskPanel = (_jsxs(Box, { flexDirection: 'row', children: [_jsx(Box, { flexDirection: 'column', width: listW, children: _jsx(SelectList, { items: tasks, selectedIndex: selected, isFocused: focus === "tasks", header: 'Tasks' }) }), _jsx(Box, { flexDirection: 'column', width: actionsW, children: focus === "rename" ?
+                    _jsxs(Box, { flexDirection: 'column', children: [_jsx(Text, { color: 'gray', children: "Actions" }), _jsx(Text, { color: 'cyan', children: "New name:" }), _jsxs(Text, { color: 'white', children: [renameVal, _jsx(Text, { color: 'cyan', children: "\u2588" })] })] }) :
+                    running ?
+                        _jsxs(Box, { flexDirection: 'column', children: [_jsx(Text, { color: focus === "actions" ? "cyan" : "gray", children: "Actions" }), _jsx(Spinner, { type: 'dots' })] }) :
+                        _jsx(SelectList, { items: TASK_ACTIONS, selectedIndex: actionIdx, isFocused: focus === "actions", header: 'Actions' }) }), _jsxs(Box, { flexDirection: 'column', width: previewW, children: [_jsx(Text, { color: focus === "preview" ? "cyan" : "gray", children: previewLoading ? _jsxs(_Fragment, { children: [_jsx(Spinner, { type: 'dots' }), " loading"] }) : "Task Preview" }), _jsx(OutputBox, { lines: preview, active: focus === "preview", maxVisible: previewH, contentWidth: previewW, borderColor: focus === "preview" ? "cyan" : "gray" })] })] }));
     return (_jsxs(Box, { flexDirection: 'column', padding: 1, children: [loading ?
                 _jsxs(Text, { children: [_jsx(Spinner, { type: 'dots' }), " Loading..."] }) :
                 _jsxs(Text, { children: ["Current task: ", _jsx(Text, { color: 'yellow', children: currentTask })] }), _jsx(Text, { children: " " }), !loading && taskPanel, output !== null && _jsx(Text, { color: 'yellow', children: output })] }));

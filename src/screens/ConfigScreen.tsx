@@ -6,11 +6,11 @@
 
 import { useEffect, useState, useCallback } from "react"
 import { Box, Text, useInput }              from "ink"
-import SelectInput                          from "ink-select-input"
 import Spinner                              from "ink-spinner"
 import { execa }                            from "execa"
 import stripAnsi                            from "strip-ansi"
-import { SelectIndicator, SelectItem, type ActionItem } from "./Screen.js"
+import { type ActionItem }                  from "./Screen.js"
+import SelectList                           from "../components/SelectList.js"
 import { logError }                         from "../components/Logger.js"
 
 /*  parse "ase config list" table output into a map of key -> { value, scope }  */
@@ -36,6 +36,10 @@ const PRESET_ITEMS: ActionItem[] = [
     { label: "vibe",     value: "vibe"     },
     { label: "pro",      value: "pro"      },
     { label: "industry", value: "industry" }
+]
+
+const CONFIG_ACTIONS: ActionItem[] = [
+    { label: "Init preset", value: "preset" }
 ]
 
 type ScopeMap = Map<string, { value: string, scope: string }>
@@ -76,6 +80,7 @@ const ConfigScreen = ({ screenWidth: _screenWidth, screenHeight: _screenHeight }
     const [ error,       setError       ] = useState("")
     const [ mode,        setMode        ] = useState<ConfigMode>("view")
     const [ selectedRow, setSelectedRow ] = useState(0)
+    const [ presetIdx,   setPresetIdx   ] = useState(0)
     const [ inputVal,    setInputVal    ] = useState("")
     const [ output,      setOutput      ] = useState<string | null>(null)
 
@@ -135,6 +140,22 @@ const ConfigScreen = ({ screenWidth: _screenWidth, screenHeight: _screenHeight }
                 setInputVal(current)
                 setMode("edit")
             }
+            else if (input === "i") {
+                setPresetIdx(0)
+                setMode("preset")
+            }
+        }
+        else if (mode === "preset") {
+            if (key.escape)
+                setMode("view")
+            else if (key.upArrow)
+                setPresetIdx((i) => Math.max(0, i - 1))
+            else if (key.downArrow)
+                setPresetIdx((i) => Math.min(PRESET_ITEMS.length - 1, i + 1))
+            else if (key.return)
+                handlePresetSelect(PRESET_ITEMS[presetIdx]).catch((e) => {
+                    logError("ConfigScreen", "unexpected", e)
+                })
         }
         else if (mode === "edit") {
             if (key.escape) {
@@ -176,15 +197,6 @@ const ConfigScreen = ({ screenWidth: _screenWidth, screenHeight: _screenHeight }
         catch (err) {
             setOutput(`Error: ${err instanceof Error ? err.message : String(err)}`)
         }
-    }
-
-    const CONFIG_ACTIONS: ActionItem[] = [
-        { label: "Init preset", value: "preset" }
-    ]
-
-    const handleActionSelect = (item: ActionItem) => {
-        if (item.value === "preset")
-            setMode("preset")
     }
 
     const hdr = (
@@ -236,22 +248,11 @@ const ConfigScreen = ({ screenWidth: _screenWidth, screenHeight: _screenHeight }
                             <Text color='gray'>(Enter=save  ESC=cancel)</Text> :
                             mode === "preset" ?
                                 <Box flexDirection='column'>
-                                    <Text color='blue'>Select preset:</Text>
-                                    <SelectInput
-                                        items={PRESET_ITEMS}
-                                        onSelect={handlePresetSelect}
-                                        indicatorComponent={SelectIndicator}
-                                        itemComponent={SelectItem}
-                                    />
+                                    <SelectList items={PRESET_ITEMS} selectedIndex={presetIdx} isFocused header='Select preset:' />
                                 </Box> :
                                 <Box flexDirection='column'>
-                                    <Text color='gray'>(↑/↓=navigate  Enter=edit)</Text>
-                                    <SelectInput
-                                        items={CONFIG_ACTIONS}
-                                        onSelect={handleActionSelect}
-                                        indicatorComponent={SelectIndicator}
-                                        itemComponent={SelectItem}
-                                    />
+                                    <Text color='gray'>(↑/↓=navigate  Enter=edit  i=init preset)</Text>
+                                    <SelectList items={CONFIG_ACTIONS} selectedIndex={0} />
                                 </Box>}
                         {output !== null && <Text color='yellow'>{output}</Text>}
                     </Box>}

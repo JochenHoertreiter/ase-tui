@@ -11,6 +11,7 @@ import Spinner                                        from "ink-spinner"
 import { execa }                                      from "execa"
 import { runCommand, type ActionItem }                from "./Screen.js"
 import OutputBox                                      from "../components/OutputBox.js"
+import SelectList                                      from "../components/SelectList.js"
 import { logError }                                   from "../components/Logger.js"
 import type { HintSegment }                           from "../components/HintBar.js"
 
@@ -293,42 +294,24 @@ const TaskScreen = ({ escBlockedRef, onHint, screenWidth, screenHeight }: Props)
     const previewW = Math.max(1, screenWidth  - listW - actionsW)
     const previewH = Math.max(1, screenHeight - 4)
 
-    const taskList = (
-        <Box flexDirection='column'>
-            {tasks.map((t, i) => (
-                <Text key={t.value} color={i === selected ? (focus === "tasks" ? "cyan" : "gray") : "white"}>
-                    {i === selected ? <Text color={focus === "tasks" ? "cyan" : "gray"}>❯ </Text> : "  "}{t.label}
-                </Text>
-            ))}
-        </Box>
-    )
-
-    const actionList = (
-        <Box flexDirection='column'>
-            {TASK_ACTIONS.map((a, i) => (
-                <Text key={a.value} color={i === actionIdx ? (focus === "actions" ? "cyan" : "gray") : "white"}>
-                    {i === actionIdx ? <Text color={focus === "actions" ? "cyan" : "gray"}>❯ </Text> : "  "}{a.label}
-                </Text>
-            ))}
-        </Box>
-    )
-
     const taskPanel = (
         <Box flexDirection='row'>
             <Box flexDirection='column' width={listW}>
-                <Text color={focus === "tasks" ? "cyan" : "gray"}>Tasks</Text>
-                {taskList}
+                <SelectList items={tasks} selectedIndex={selected} isFocused={focus === "tasks"} header='Tasks' />
             </Box>
             <Box flexDirection='column' width={actionsW}>
-                <Text color={focus === "actions" ? "cyan" : "gray"}>Actions</Text>
                 {focus === "rename" ?
                     <Box flexDirection='column'>
+                        <Text color='gray'>Actions</Text>
                         <Text color='cyan'>New name:</Text>
                         <Text color='white'>{renameVal}<Text color='cyan'>█</Text></Text>
                     </Box> :
                     running ?
-                        <Spinner type='dots' /> :
-                        actionList}
+                        <Box flexDirection='column'>
+                            <Text color={focus === "actions" ? "cyan" : "gray"}>Actions</Text>
+                            <Spinner type='dots' />
+                        </Box> :
+                        <SelectList items={TASK_ACTIONS} selectedIndex={actionIdx} isFocused={focus === "actions"} header='Actions' />}
             </Box>
             <Box flexDirection='column' width={previewW}>
                 <Text color={focus === "preview" ? "cyan" : "gray"}>

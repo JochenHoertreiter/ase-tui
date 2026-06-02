@@ -6,11 +6,10 @@ import { jsxs as _jsxs, jsx as _jsx } from "react/jsx-runtime";
 */
 import { useEffect, useState, useCallback } from "react";
 import { Box, Text, useInput } from "ink";
-import SelectInput from "ink-select-input";
 import Spinner from "ink-spinner";
 import { execa } from "execa";
 import stripAnsi from "strip-ansi";
-import { SelectIndicator, SelectItem } from "./Screen.js";
+import SelectList from "../components/SelectList.js";
 import { logError } from "../components/Logger.js";
 /*  parse "ase config list" table output into a map of key -> { value, scope }  */
 const parseConfigList = (stdout) => {
@@ -35,6 +34,9 @@ const PRESET_ITEMS = [
     { label: "pro", value: "pro" },
     { label: "industry", value: "industry" }
 ];
+const CONFIG_ACTIONS = [
+    { label: "Init preset", value: "preset" }
+];
 const buildRows = (userMap, projectMap) => {
     const keys = new Set([...userMap.keys(), ...projectMap.keys()]);
     const get = (map, scope, key) => {
@@ -56,6 +58,7 @@ const ConfigScreen = ({ screenWidth: _screenWidth, screenHeight: _screenHeight }
     const [error, setError] = useState("");
     const [mode, setMode] = useState("view");
     const [selectedRow, setSelectedRow] = useState(0);
+    const [presetIdx, setPresetIdx] = useState(0);
     const [inputVal, setInputVal] = useState("");
     const [output, setOutput] = useState(null);
     const reload = useCallback(async () => {
@@ -112,6 +115,22 @@ const ConfigScreen = ({ screenWidth: _screenWidth, screenHeight: _screenHeight }
                 setInputVal(current);
                 setMode("edit");
             }
+            else if (input === "i") {
+                setPresetIdx(0);
+                setMode("preset");
+            }
+        }
+        else if (mode === "preset") {
+            if (key.escape)
+                setMode("view");
+            else if (key.upArrow)
+                setPresetIdx((i) => Math.max(0, i - 1));
+            else if (key.downArrow)
+                setPresetIdx((i) => Math.min(PRESET_ITEMS.length - 1, i + 1));
+            else if (key.return)
+                handlePresetSelect(PRESET_ITEMS[presetIdx]).catch((e) => {
+                    logError("ConfigScreen", "unexpected", e);
+                });
         }
         else if (mode === "edit") {
             if (key.escape) {
@@ -151,13 +170,6 @@ const ConfigScreen = ({ screenWidth: _screenWidth, screenHeight: _screenHeight }
             setOutput(`Error: ${err instanceof Error ? err.message : String(err)}`);
         }
     };
-    const CONFIG_ACTIONS = [
-        { label: "Init preset", value: "preset" }
-    ];
-    const handleActionSelect = (item) => {
-        if (item.value === "preset")
-            setMode("preset");
-    };
     const hdr = (_jsxs(Text, { children: [_jsxs(Text, { color: 'blue', children: ["  ", pad("KEY", COL_W.key)] }), "  ", _jsx(Text, { color: 'blue', children: pad("DEFAULT", COL_W.default) }), "  ", _jsx(Text, { color: 'blue', children: pad("USER", COL_W.user) }), "  ", _jsx(Text, { color: 'blue', children: pad("PROJECT", COL_W.project) })] }));
     const sep = (_jsx(Text, { color: 'gray', children: "─".repeat(COL_W.key + COL_W.default + COL_W.user + COL_W.project + 8) }));
     return (_jsx(Box, { flexDirection: 'column', padding: 1, children: loading ?
@@ -174,7 +186,7 @@ const ConfigScreen = ({ screenWidth: _screenWidth, screenHeight: _screenHeight }
                         }), _jsx(Text, { children: " " }), mode === "edit" ?
                             _jsx(Text, { color: 'gray', children: "(Enter=save  ESC=cancel)" }) :
                             mode === "preset" ?
-                                _jsxs(Box, { flexDirection: 'column', children: [_jsx(Text, { color: 'blue', children: "Select preset:" }), _jsx(SelectInput, { items: PRESET_ITEMS, onSelect: handlePresetSelect, indicatorComponent: SelectIndicator, itemComponent: SelectItem })] }) :
-                                _jsxs(Box, { flexDirection: 'column', children: [_jsx(Text, { color: 'gray', children: "(\u2191/\u2193=navigate  Enter=edit)" }), _jsx(SelectInput, { items: CONFIG_ACTIONS, onSelect: handleActionSelect, indicatorComponent: SelectIndicator, itemComponent: SelectItem })] }), output !== null && _jsx(Text, { color: 'yellow', children: output })] }) }));
+                                _jsx(Box, { flexDirection: 'column', children: _jsx(SelectList, { items: PRESET_ITEMS, selectedIndex: presetIdx, isFocused: true, header: 'Select preset:' }) }) :
+                                _jsxs(Box, { flexDirection: 'column', children: [_jsx(Text, { color: 'gray', children: "(\u2191/\u2193=navigate  Enter=edit  i=init preset)" }), _jsx(SelectList, { items: CONFIG_ACTIONS, selectedIndex: 0 })] }), output !== null && _jsx(Text, { color: 'yellow', children: output })] }) }));
 };
 export default ConfigScreen;

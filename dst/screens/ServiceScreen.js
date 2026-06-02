@@ -5,13 +5,13 @@ import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
 **  Licensed under GPL 3.0 <https://spdx.org/licenses/GPL-3.0-only>
 */
 import { useEffect, useState, useRef } from "react";
-import { Box, Text } from "ink";
-import SelectInput from "ink-select-input";
+import { Box, Text, useInput } from "ink";
 import Spinner from "ink-spinner";
 import { execa } from "execa";
 import { DateTime } from "luxon";
-import { SelectIndicator, SelectItem, runCommand } from "./Screen.js";
+import { runCommand } from "./Screen.js";
 import OutputBox from "../components/OutputBox.js";
+import SelectList from "../components/SelectList.js";
 import { logError } from "../components/Logger.js";
 const actions = [
     { label: "Start service", value: "start" },
@@ -21,6 +21,7 @@ const ServiceScreen = ({ screenWidth, screenHeight }) => {
     const [statusLoading, setStatusLoading] = useState(true);
     const [status, setStatus] = useState("");
     const [running, setRunning] = useState(false);
+    const [selected, setSelected] = useState(0);
     const [lines, setLines] = useState([]);
     const runningRef = useRef(false);
     useEffect(() => {
@@ -73,12 +74,22 @@ const ServiceScreen = ({ screenWidth, screenHeight }) => {
             setRunning(false);
         }
     };
+    useInput((_input, key) => {
+        if (runningRef.current)
+            return;
+        if (key.upArrow)
+            setSelected((s) => Math.max(0, s - 1));
+        else if (key.downArrow)
+            setSelected((s) => Math.min(actions.length - 1, s + 1));
+        else if (key.return)
+            handleSelect(actions[selected]).catch(() => { });
+    });
     /* own elements: 1 status + 1 blank + 1 spinner/select + 1 padding = 4 */
     const outputH = Math.max(1, screenHeight - 4);
     return (_jsxs(Box, { flexDirection: 'column', padding: 1, children: [statusLoading ?
                 _jsxs(Text, { children: [_jsx(Spinner, { type: 'dots' }), " Loading status..."] }) :
                 _jsxs(Text, { children: ["Status: ", _jsx(Text, { color: 'green', children: status })] }), _jsx(Text, { children: " " }), running ?
                 _jsxs(Text, { children: [_jsx(Spinner, { type: 'dots' }), " Running..."] }) :
-                _jsx(SelectInput, { items: actions, onSelect: handleSelect, indicatorComponent: SelectIndicator, itemComponent: SelectItem }), _jsx(OutputBox, { lines: lines, active: !running, maxVisible: outputH, contentWidth: screenWidth })] }));
+                _jsx(SelectList, { items: actions, selectedIndex: selected, isFocused: true }), _jsx(OutputBox, { lines: lines, active: !running, maxVisible: outputH, contentWidth: screenWidth })] }));
 };
 export default ServiceScreen;

@@ -5,14 +5,15 @@ import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
 **  Licensed under GPL 3.0 <https://spdx.org/licenses/GPL-3.0-only>
 */
 import { useState, useRef } from "react";
-import { Box, Text } from "ink";
-import SelectInput from "ink-select-input";
+import { Box, Text, useInput } from "ink";
 import Spinner from "ink-spinner";
 import { DateTime } from "luxon";
-import { SelectIndicator, SelectItem, runCommand } from "./Screen.js";
+import { runCommand } from "./Screen.js";
 import OutputBox from "../components/OutputBox.js";
+import SelectList from "../components/SelectList.js";
 const ActionScreen = ({ command, actions, listHeader, screenWidth, screenHeight }) => {
     const [running, setRunning] = useState(false);
+    const [selected, setSelected] = useState(0);
     const [lines, setLines] = useState([]);
     const runningRef = useRef(false);
     const handleSelect = async (item) => {
@@ -38,13 +39,23 @@ const ActionScreen = ({ command, actions, listHeader, screenWidth, screenHeight 
             setRunning(false);
         }
     };
+    useInput((_input, key) => {
+        if (runningRef.current)
+            return;
+        if (key.upArrow)
+            setSelected((s) => Math.max(0, s - 1));
+        else if (key.downArrow)
+            setSelected((s) => Math.min(actions.length - 1, s + 1));
+        else if (key.return && actions.length > 0)
+            handleSelect(actions[selected]).catch(() => { });
+    });
     /* left column: fixed width for action list */
     const actionsW = 20;
     const outputW = Math.max(1, screenWidth - actionsW);
     const outputH = Math.max(1, screenHeight);
-    return (_jsxs(Box, { flexDirection: 'row', padding: 1, children: [_jsxs(Box, { flexDirection: 'column', width: actionsW, children: [listHeader !== undefined ?
-                        _jsx(Text, { color: running ? "gray" : "cyan", children: listHeader }) : null, running ?
-                        _jsxs(Text, { children: [_jsx(Spinner, { type: 'dots' }), " Running..."] }) :
-                        _jsx(SelectInput, { items: actions, onSelect: handleSelect, indicatorComponent: SelectIndicator, itemComponent: SelectItem })] }), _jsx(OutputBox, { lines: lines, active: !running, maxVisible: outputH, contentWidth: outputW })] }));
+    return (_jsxs(Box, { flexDirection: 'row', padding: 1, children: [_jsx(Box, { flexDirection: 'column', width: actionsW, children: running ?
+                    _jsxs(Box, { flexDirection: 'column', children: [listHeader !== undefined ?
+                                _jsx(Text, { color: 'gray', children: listHeader }) : null, _jsxs(Text, { children: [_jsx(Spinner, { type: 'dots' }), " Running..."] })] }) :
+                    _jsx(SelectList, { items: actions, selectedIndex: selected, isFocused: true, header: listHeader }) }), _jsx(OutputBox, { lines: lines, active: !running, maxVisible: outputH, contentWidth: outputW })] }));
 };
 export default ActionScreen;

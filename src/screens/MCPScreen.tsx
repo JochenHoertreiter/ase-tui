@@ -5,15 +5,15 @@
 */
 
 import { useEffect, useState, useRef } from "react"
-import { Box, Text }                  from "ink"
-import SelectInput                    from "ink-select-input"
-import Spinner                        from "ink-spinner"
-import { DateTime }                   from "luxon"
-import stripAnsi                      from "strip-ansi"
-import { execa }                      from "execa"
-import { SelectIndicator, SelectItem, runCommand, type ActionItem } from "./Screen.js"
-import OutputBox                      from "../components/OutputBox.js"
-import { logError }                  from "../components/Logger.js"
+import { Box, Text, useInput }         from "ink"
+import Spinner                         from "ink-spinner"
+import { DateTime }                    from "luxon"
+import stripAnsi                       from "strip-ansi"
+import { execa }                       from "execa"
+import { runCommand, type ActionItem } from "./Screen.js"
+import OutputBox                       from "../components/OutputBox.js"
+import SelectList                      from "../components/SelectList.js"
+import { logError }                    from "../components/Logger.js"
 
 type McpServer = { id: string, name: string }
 
@@ -40,14 +40,18 @@ const ACTIONS: ActionItem[] = [
     { label: "Deactivate", value: "deactivate" }
 ]
 
+type Focus = "servers" | "actions"
+
 type Props = { screenWidth: number, screenHeight: number }
 
 const MCPScreen = ({ screenWidth, screenHeight }: Props) => {
-    const [ loading,    setLoading    ] = useState(true)
-    const [ servers,    setServers    ] = useState<McpServer[]>([])
-    const [ selected,   setSelected   ] = useState(0)
-    const [ running,    setRunning    ] = useState(false)
-    const [ lines,      setLines      ] = useState<string[]>([])
+    const [ loading,        setLoading        ] = useState(true)
+    const [ servers,        setServers        ] = useState<McpServer[]>([])
+    const [ selected,       setSelected       ] = useState(0)
+    const [ selectedAction, setSelectedAction ] = useState(0)
+    const [ focus,          setFocus          ] = useState<Focus>("servers")
+    const [ running,        setRunning        ] = useState(false)
+    const [ lines,          setLines          ] = useState<string[]>([])
     const runningRef = useRef(false)
 
     useEffect(() => {
@@ -76,10 +80,6 @@ const MCPScreen = ({ screenWidth, screenHeight }: Props) => {
         value: String(i)
     }))
 
-    const handleServerSelect = (item: ActionItem) => {
-        setSelected(Number(item.value))
-    }
-
     const handleActionSelect = async (item: ActionItem) => {
         if (runningRef.current)
             return
@@ -107,6 +107,31 @@ const MCPScreen = ({ screenWidth, screenHeight }: Props) => {
         }
     }
 
+    useInput((_input, key) => {
+        if (runningRef.current)
+            return
+        if (focus === "servers") {
+            if (key.upArrow)
+                setSelected((s) => Math.max(0, s - 1))
+            else if (key.downArrow)
+                setSelected((s) => Math.min(servers.length - 1, s + 1))
+            else if (key.return && servers.length > 0)
+                setFocus("actions")
+        }
+        else if (focus === "actions") {
+            if (key.upArrow)
+                setSelectedAction((i) => Math.max(0, i - 1))
+            else if (key.downArrow)
+                setSelectedAction((i) => Math.min(ACTIONS.length - 1, i + 1))
+            else if (key.escape)
+                setFocus("servers")
+            else if (key.return)
+                handleActionSelect(ACTIONS[selectedAction]).catch((e) => {
+                    logError("MCPScreen", "unexpected", e)
+                })
+        }
+    })
+
     /* layout: server list | action list | output */
     const serversW = 28
     const actionsW = 16
@@ -119,24 +144,15 @@ const MCPScreen = ({ screenWidth, screenHeight }: Props) => {
                 <Text><Spinner type='dots' /> Loading MCP servers...</Text> :
                 <Box flexDirection='row'>
                     <Box flexDirection='column' width={serversW}>
-                        <Text color='blue'>MCP Servers</Text>
-                        <SelectInput
-                            items={serverItems}
-                            onSelect={handleServerSelect}
-                            indicatorComponent={SelectIndicator}
-                            itemComponent={SelectItem}
-                        />
+                        <SelectList items={serverItems} selectedIndex={selected} isFocused={focus === "servers"} header='MCP Servers' />
                     </Box>
                     <Box flexDirection='column' width={actionsW}>
-                        <Text color='blue'>Action</Text>
                         {running ?
-                            <Text><Spinner type='dots' /> Running...</Text> :
-                            <SelectInput
-                                items={ACTIONS}
-                                onSelect={handleActionSelect}
-                                indicatorComponent={SelectIndicator}
-                                itemComponent={SelectItem}
-                            />}
+                            <Box flexDirection='column'>
+                                <Text color='gray'>Action</Text>
+                                <Text><Spinner type='dots' /> Running...</Text>
+                            </Box> :
+                            <SelectList items={ACTIONS} selectedIndex={selectedAction} isFocused={focus === "actions"} header='Action' />}
                     </Box>
                     <OutputBox lines={lines} active={!running} maxVisible={outputH} contentWidth={outputW} />
                 </Box>}

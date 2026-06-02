@@ -4,13 +4,13 @@
 **  Licensed under GPL 3.0 <https://spdx.org/licenses/GPL-3.0-only>
 */
 
-import { useState, useRef }    from "react"
-import { Box, Text }           from "ink"
-import SelectInput             from "ink-select-input"
-import Spinner                 from "ink-spinner"
-import { DateTime }            from "luxon"
-import { SelectIndicator, SelectItem, runCommand, type ActionItem } from "./Screen.js"
-import OutputBox               from "../components/OutputBox.js"
+import { useState, useRef }            from "react"
+import { Box, Text, useInput }         from "ink"
+import Spinner                         from "ink-spinner"
+import { DateTime }                    from "luxon"
+import { runCommand, type ActionItem } from "./Screen.js"
+import OutputBox                       from "../components/OutputBox.js"
+import SelectList                      from "../components/SelectList.js"
 
 type Props = {
     command:      string
@@ -22,6 +22,7 @@ type Props = {
 
 const ActionScreen = ({ command, actions, listHeader, screenWidth, screenHeight }: Props) => {
     const [ running,    setRunning    ] = useState(false)
+    const [ selected,   setSelected   ] = useState(0)
     const [ lines,      setLines      ] = useState<string[]>([])
     const runningRef = useRef(false)
 
@@ -49,6 +50,17 @@ const ActionScreen = ({ command, actions, listHeader, screenWidth, screenHeight 
         }
     }
 
+    useInput((_input, key) => {
+        if (runningRef.current)
+            return
+        if (key.upArrow)
+            setSelected((s) => Math.max(0, s - 1))
+        else if (key.downArrow)
+            setSelected((s) => Math.min(actions.length - 1, s + 1))
+        else if (key.return && actions.length > 0)
+            handleSelect(actions[selected]).catch(() => {})
+    })
+
     /* left column: fixed width for action list */
     const actionsW = 20
     const outputW  = Math.max(1, screenWidth  - actionsW)
@@ -57,11 +69,13 @@ const ActionScreen = ({ command, actions, listHeader, screenWidth, screenHeight 
     return (
         <Box flexDirection='row' padding={1}>
             <Box flexDirection='column' width={actionsW}>
-                {listHeader !== undefined ?
-                    <Text color={running ? "gray" : "cyan"}>{listHeader}</Text> : null}
                 {running ?
-                    <Text><Spinner type='dots' /> Running...</Text> :
-                    <SelectInput items={actions} onSelect={handleSelect} indicatorComponent={SelectIndicator} itemComponent={SelectItem} />}
+                    <Box flexDirection='column'>
+                        {listHeader !== undefined ?
+                            <Text color='gray'>{listHeader}</Text> : null}
+                        <Text><Spinner type='dots' /> Running...</Text>
+                    </Box> :
+                    <SelectList items={actions} selectedIndex={selected} isFocused header={listHeader} />}
             </Box>
             <OutputBox lines={lines} active={!running} maxVisible={outputH} contentWidth={outputW} />
         </Box>
