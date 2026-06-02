@@ -16,3 +16,13 @@ before continuing.
 
 The agent may still read, analyze, and modify code –
 only building, running, and testing are exclusively the user's responsibility.
+
+## Generated Files
+
+**The `dst/` folder is generated and must NEVER be changed by the agent.**
+
+The files in `dst/` are build artifacts produced during the project build
+from the sources in `src/`. They are overwritten on every build.
+
+- Do NOT edit, create, or delete any file inside `dst/`.
+- Always make changes in the corresponding source files under `src/` instead.
