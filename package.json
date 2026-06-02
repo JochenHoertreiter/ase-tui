@@ -6,7 +6,7 @@
     "homepage":                             "http://github.com/JochenHoertreiter/ase-tui",
     "repository":                           { "url": "git+https://github.com/JochenHoertreiter/ase-tui.git", "type": "git" },
     "bugs":                                 { "url": "https://github.com/JochenHoertreiter/ase-tui/issues" },
-    "version":                              "0.0.4",
+    "version":                              "0.0.5",
     "license":                              "GPL-3.0-only",
     "author": {
         "name":                             "Jochen Hörtreiter"
