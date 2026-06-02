@@ -37,7 +37,7 @@ const ACTIONS = [
     { label: "Activate", value: "activate" },
     { label: "Deactivate", value: "deactivate" }
 ];
-const MCPScreen = ({ screenWidth, screenHeight }) => {
+const MCPScreen = ({ escBlockedRef, onHint, screenWidth, screenHeight }) => {
     const [loading, setLoading] = useState(true);
     const [servers, setServers] = useState([]);
     const [selected, setSelected] = useState(0);
@@ -66,6 +66,25 @@ const MCPScreen = ({ screenWidth, screenHeight }) => {
         load().catch((e) => { logError("MCPScreen", "unexpected", e); });
         return () => { cancelled = true; };
     }, []);
+    /*  sync escBlockedRef so App's global ESC handler knows when to block  */
+    useEffect(() => {
+        escBlockedRef.current = focus !== "servers";
+        return () => { escBlockedRef.current = false; };
+    }, [focus, escBlockedRef]);
+    /*  delegate focus-dependent hint text to the master hint bar  */
+    useEffect(() => {
+        if (focus === "servers")
+            onHint([
+                { key: "↑ ↓", desc: "navigate servers" },
+                { key: "⏎", desc: "select server" }
+            ]);
+        else if (focus === "actions")
+            onHint([
+                { key: "↑ ↓", desc: "navigate actions" },
+                { key: "⏎", desc: "execute action" },
+                { key: "ESC", desc: "back" }
+            ]);
+    }, [focus, onHint]);
     const serverItems = servers.map((s, i) => ({
         label: `[${s.id}] ${s.name}`,
         value: String(i)

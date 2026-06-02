@@ -117,11 +117,11 @@ const App = () => {
                 </Box>
             </Box>
             <Box height={contentH}>
-                {screen === "config"  && <ConfigScreen screenWidth={screenW} screenHeight={screenH} />}
-                {screen === "service" && <ServiceScreen screenWidth={screenW} screenHeight={screenH} />}
+                {screen === "config"  && <ConfigScreen escBlockedRef={escBlockedRef} onHint={onHintCb} screenWidth={screenW} screenHeight={screenH} />}
+                {screen === "service" && <ServiceScreen escBlockedRef={escBlockedRef} onHint={onHintCb} screenWidth={screenW} screenHeight={screenH} />}
                 {screen === "task"    && <TaskScreen escBlockedRef={escBlockedRef} onHint={onHintCb} screenWidth={screenW} screenHeight={screenH} />}
-                {screen === "setup"   && <SetupScreen screenWidth={screenW} screenHeight={screenH} />}
-                {screen === "mcp"     && <MCPScreen screenWidth={screenW} screenHeight={screenH} />}
+                {screen === "setup"   && <SetupScreen escBlockedRef={escBlockedRef} onHint={onHintCb} screenWidth={screenW} screenHeight={screenH} />}
+                {screen === "mcp"     && <MCPScreen escBlockedRef={escBlockedRef} onHint={onHintCb} screenWidth={screenW} screenHeight={screenH} />}
             </Box>
             <HintBar hint={hint} width={termW} />
         </Box>

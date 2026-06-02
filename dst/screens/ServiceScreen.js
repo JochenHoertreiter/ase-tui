@@ -17,7 +17,7 @@ const actions = [
     { label: "Start service", value: "start" },
     { label: "Stop service", value: "stop" }
 ];
-const ServiceScreen = ({ screenWidth, screenHeight }) => {
+const ServiceScreen = ({ onHint, screenWidth, screenHeight }) => {
     const [statusLoading, setStatusLoading] = useState(true);
     const [status, setStatus] = useState("");
     const [running, setRunning] = useState(false);
@@ -42,6 +42,13 @@ const ServiceScreen = ({ screenWidth, screenHeight }) => {
         load().catch((e) => { logError("ServiceScreen", "unexpected", e); });
         return () => { cancelled = true; };
     }, []);
+    /*  delegate hint text to the master hint bar  */
+    useEffect(() => {
+        onHint([
+            { key: "↑ ↓", desc: "navigate actions" },
+            { key: "⏎", desc: "execute action" }
+        ]);
+    }, [onHint]);
     const handleSelect = async (item) => {
         if (runningRef.current)
             return;

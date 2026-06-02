@@ -5,6 +5,7 @@
 */
 
 import { useEffect, useState, useCallback } from "react"
+import type { RefObject }                   from "react"
 import { Box, Text, useInput }              from "ink"
 import Spinner                              from "ink-spinner"
 import { execa }                            from "execa"
@@ -12,6 +13,7 @@ import stripAnsi                            from "strip-ansi"
 import { type ActionItem }                  from "./Screen.js"
 import SelectList                           from "../components/SelectList.js"
 import { logError }                         from "../components/Logger.js"
+import type { HintSegment }                 from "../components/HintBar.js"
 
 /*  parse "ase config list" table output into a map of key -> { value, scope }  */
 const parseConfigList = (stdout: string): Map<string, { value: string, scope: string }> => {
@@ -36,10 +38,6 @@ const PRESET_ITEMS: ActionItem[] = [
     { label: "vibe",     value: "vibe"     },
     { label: "pro",      value: "pro"      },
     { label: "industry", value: "industry" }
-]
-
-const CONFIG_ACTIONS: ActionItem[] = [
-    { label: "Init preset", value: "preset" }
 ]
 
 type ScopeMap = Map<string, { value: string, scope: string }>
@@ -72,9 +70,14 @@ const pad = (s: string, w: number): string =>
 
 type ConfigMode = "view" | "edit" | "preset"
 
-type Props = { screenWidth: number, screenHeight: number }
+type Props = {
+    escBlockedRef: RefObject<boolean>
+    onHint:        (hint: HintSegment[] | null) => void
+    screenWidth:   number
+    screenHeight:  number
+}
 
-const ConfigScreen = ({ screenWidth: _screenWidth, screenHeight: _screenHeight }: Props) => {
+const ConfigScreen = ({ escBlockedRef, onHint, screenWidth: _screenWidth, screenHeight: _screenHeight }: Props) => {
     const [ loading,     setLoading     ] = useState(true)
     const [ rows,        setRows        ] = useState<ConfigRow[]>([])
     const [ error,       setError       ] = useState("")
@@ -127,6 +130,33 @@ const ConfigScreen = ({ screenWidth: _screenWidth, screenHeight: _screenHeight }
         load().catch((e) => { logError("ConfigScreen", "unexpected", e) })
         return () => { cancelled = true }
     }, [])
+
+    /*  sync escBlockedRef so App's global ESC handler knows when to block  */
+    useEffect(() => {
+        escBlockedRef.current = mode !== "view"
+        return () => { escBlockedRef.current = false }
+    }, [ mode, escBlockedRef ])
+
+    /*  delegate mode-dependent hint text to the master hint bar  */
+    useEffect(() => {
+        if (mode === "edit")
+            onHint([
+                { key: "⏎",   desc: "save"   },
+                { key: "ESC", desc: "cancel" }
+            ])
+        else if (mode === "preset")
+            onHint([
+                { key: "↑ ↓", desc: "navigate presets" },
+                { key: "⏎",   desc: "select preset"    },
+                { key: "ESC", desc: "back"             }
+            ])
+        else
+            onHint([
+                { key: "↑ ↓", desc: "navigate keys" },
+                { key: "⏎",   desc: "edit value"    },
+                { key: "i",   desc: "init preset"   }
+            ])
+    }, [ mode, onHint ])
 
     useInput((input, key) => {
         if (mode === "view") {
@@ -244,16 +274,11 @@ const ConfigScreen = ({ screenWidth: _screenWidth, screenHeight: _screenHeight }
                             )
                         })}
                         <Text> </Text>
-                        {mode === "edit" ?
-                            <Text color='gray'>(Enter=save  ESC=cancel)</Text> :
-                            mode === "preset" ?
-                                <Box flexDirection='column'>
-                                    <SelectList items={PRESET_ITEMS} selectedIndex={presetIdx} isFocused header='Select preset:' />
-                                </Box> :
-                                <Box flexDirection='column'>
-                                    <Text color='gray'>(↑/↓=navigate  Enter=edit  i=init preset)</Text>
-                                    <SelectList items={CONFIG_ACTIONS} selectedIndex={0} />
-                                </Box>}
+                        {mode === "preset" ?
+                            <Box flexDirection='column'>
+                                <SelectList items={PRESET_ITEMS} selectedIndex={presetIdx} isFocused header='Select preset:' />
+                            </Box> :
+                            null}
                         {output !== null && <Text color='yellow'>{output}</Text>}
                     </Box>}
         </Box>

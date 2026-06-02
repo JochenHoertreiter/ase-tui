@@ -34,9 +34,6 @@ const PRESET_ITEMS = [
     { label: "pro", value: "pro" },
     { label: "industry", value: "industry" }
 ];
-const CONFIG_ACTIONS = [
-    { label: "Init preset", value: "preset" }
-];
 const buildRows = (userMap, projectMap) => {
     const keys = new Set([...userMap.keys(), ...projectMap.keys()]);
     const get = (map, scope, key) => {
@@ -52,7 +49,7 @@ const buildRows = (userMap, projectMap) => {
 };
 const COL_W = { key: 16, default: 12, user: 12, project: 12 };
 const pad = (s, w) => s.length >= w ? s.slice(0, w) : s + " ".repeat(w - s.length);
-const ConfigScreen = ({ screenWidth: _screenWidth, screenHeight: _screenHeight }) => {
+const ConfigScreen = ({ escBlockedRef, onHint, screenWidth: _screenWidth, screenHeight: _screenHeight }) => {
     const [loading, setLoading] = useState(true);
     const [rows, setRows] = useState([]);
     const [error, setError] = useState("");
@@ -103,6 +100,31 @@ const ConfigScreen = ({ screenWidth: _screenWidth, screenHeight: _screenHeight }
         load().catch((e) => { logError("ConfigScreen", "unexpected", e); });
         return () => { cancelled = true; };
     }, []);
+    /*  sync escBlockedRef so App's global ESC handler knows when to block  */
+    useEffect(() => {
+        escBlockedRef.current = mode !== "view";
+        return () => { escBlockedRef.current = false; };
+    }, [mode, escBlockedRef]);
+    /*  delegate mode-dependent hint text to the master hint bar  */
+    useEffect(() => {
+        if (mode === "edit")
+            onHint([
+                { key: "⏎", desc: "save" },
+                { key: "ESC", desc: "cancel" }
+            ]);
+        else if (mode === "preset")
+            onHint([
+                { key: "↑ ↓", desc: "navigate presets" },
+                { key: "⏎", desc: "select preset" },
+                { key: "ESC", desc: "back" }
+            ]);
+        else
+            onHint([
+                { key: "↑ ↓", desc: "navigate keys" },
+                { key: "⏎", desc: "edit value" },
+                { key: "i", desc: "init preset" }
+            ]);
+    }, [mode, onHint]);
     useInput((input, key) => {
         if (mode === "view") {
             if (key.upArrow)
@@ -183,10 +205,8 @@ const ConfigScreen = ({ screenWidth: _screenWidth, screenHeight: _screenHeight }
                                 _jsxs(Text, { color: 'cyan', children: [pad(inputVal, COL_W.project), _jsx(Text, { color: 'cyan', children: "\u2588" })] }) :
                                 _jsx(Text, { color: 'cyan', children: pad(r.project, COL_W.project) });
                             return (_jsxs(Text, { children: [indicator, _jsx(Text, { color: 'white', children: pad(r.key, COL_W.key) }), "  ", _jsx(Text, { color: 'gray', children: pad(r.default, COL_W.default) }), "  ", _jsx(Text, { color: 'yellow', children: pad(r.user, COL_W.user) }), "  ", projectCol] }, r.key));
-                        }), _jsx(Text, { children: " " }), mode === "edit" ?
-                            _jsx(Text, { color: 'gray', children: "(Enter=save  ESC=cancel)" }) :
-                            mode === "preset" ?
-                                _jsx(Box, { flexDirection: 'column', children: _jsx(SelectList, { items: PRESET_ITEMS, selectedIndex: presetIdx, isFocused: true, header: 'Select preset:' }) }) :
-                                _jsxs(Box, { flexDirection: 'column', children: [_jsx(Text, { color: 'gray', children: "(\u2191/\u2193=navigate  Enter=edit  i=init preset)" }), _jsx(SelectList, { items: CONFIG_ACTIONS, selectedIndex: 0 })] }), output !== null && _jsx(Text, { color: 'yellow', children: output })] }) }));
+                        }), _jsx(Text, { children: " " }), mode === "preset" ?
+                            _jsx(Box, { flexDirection: 'column', children: _jsx(SelectList, { items: PRESET_ITEMS, selectedIndex: presetIdx, isFocused: true, header: 'Select preset:' }) }) :
+                            null, output !== null && _jsx(Text, { color: 'yellow', children: output })] }) }));
 };
 export default ConfigScreen;

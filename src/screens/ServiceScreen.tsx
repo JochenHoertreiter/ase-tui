@@ -5,6 +5,7 @@
 */
 
 import { useEffect, useState, useRef } from "react"
+import type { RefObject }              from "react"
 import { Box, Text, useInput }         from "ink"
 import Spinner                         from "ink-spinner"
 import { execa }                       from "execa"
@@ -13,15 +14,21 @@ import { runCommand, type ActionItem } from "./Screen.js"
 import OutputBox                       from "../components/OutputBox.js"
 import SelectList                      from "../components/SelectList.js"
 import { logError }                    from "../components/Logger.js"
+import type { HintSegment }            from "../components/HintBar.js"
 
 const actions: ActionItem[] = [
     { label: "Start service",  value: "start"  },
     { label: "Stop service",   value: "stop"   }
 ]
 
-type Props = { screenWidth: number, screenHeight: number }
+type Props = {
+    escBlockedRef: RefObject<boolean>
+    onHint:        (hint: HintSegment[] | null) => void
+    screenWidth:   number
+    screenHeight:  number
+}
 
-const ServiceScreen = ({ screenWidth, screenHeight }: Props) => {
+const ServiceScreen = ({ onHint, screenWidth, screenHeight }: Props) => {
     const [ statusLoading, setStatusLoading ] = useState(true)
     const [ status,        setStatus        ] = useState("")
     const [ running,       setRunning       ] = useState(false)
@@ -47,6 +54,14 @@ const ServiceScreen = ({ screenWidth, screenHeight }: Props) => {
         load().catch((e) => { logError("ServiceScreen", "unexpected", e) })
         return () => { cancelled = true }
     }, [])
+
+    /*  delegate hint text to the master hint bar  */
+    useEffect(() => {
+        onHint([
+            { key: "↑ ↓", desc: "navigate actions" },
+            { key: "⏎",   desc: "execute action"   }
+        ])
+    }, [ onHint ])
 
     const handleSelect = async (item: ActionItem) => {
         if (runningRef.current)

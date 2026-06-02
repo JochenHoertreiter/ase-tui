@@ -5,6 +5,7 @@
 */
 
 import { useEffect, useState, useRef } from "react"
+import type { RefObject }              from "react"
 import { Box, Text, useInput }         from "ink"
 import Spinner                         from "ink-spinner"
 import { DateTime }                    from "luxon"
@@ -14,6 +15,7 @@ import { runCommand, type ActionItem } from "./Screen.js"
 import OutputBox                       from "../components/OutputBox.js"
 import SelectList                      from "../components/SelectList.js"
 import { logError }                    from "../components/Logger.js"
+import type { HintSegment }            from "../components/HintBar.js"
 
 type McpServer = { id: string, name: string }
 
@@ -45,9 +47,14 @@ const ACTIONS: ActionItem[] = [
 
 type Focus = "servers" | "actions"
 
-type Props = { screenWidth: number, screenHeight: number }
+type Props = {
+    escBlockedRef: RefObject<boolean>
+    onHint:        (hint: HintSegment[] | null) => void
+    screenWidth:   number
+    screenHeight:  number
+}
 
-const MCPScreen = ({ screenWidth, screenHeight }: Props) => {
+const MCPScreen = ({ escBlockedRef, onHint, screenWidth, screenHeight }: Props) => {
     const [ loading,        setLoading        ] = useState(true)
     const [ servers,        setServers        ] = useState<McpServer[]>([])
     const [ selected,       setSelected       ] = useState(0)
@@ -77,6 +84,27 @@ const MCPScreen = ({ screenWidth, screenHeight }: Props) => {
         load().catch((e) => { logError("MCPScreen", "unexpected", e) })
         return () => { cancelled = true }
     }, [])
+
+    /*  sync escBlockedRef so App's global ESC handler knows when to block  */
+    useEffect(() => {
+        escBlockedRef.current = focus !== "servers"
+        return () => { escBlockedRef.current = false }
+    }, [ focus, escBlockedRef ])
+
+    /*  delegate focus-dependent hint text to the master hint bar  */
+    useEffect(() => {
+        if (focus === "servers")
+            onHint([
+                { key: "↑ ↓", desc: "navigate servers" },
+                { key: "⏎",   desc: "select server"    }
+            ])
+        else if (focus === "actions")
+            onHint([
+                { key: "↑ ↓", desc: "navigate actions" },
+                { key: "⏎",   desc: "execute action"   },
+                { key: "ESC", desc: "back"             }
+            ])
+    }, [ focus, onHint ])
 
     const serverItems: ActionItem[] = servers.map((s, i) => ({
         label: `[${s.id}] ${s.name}`,

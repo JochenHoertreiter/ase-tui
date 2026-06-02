@@ -4,18 +4,25 @@ import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
 **  Copyright (c) 2026 Jochen Hörtreiter <Jochen.Hoertreiter@googlemail.com>
 **  Licensed under GPL 3.0 <https://spdx.org/licenses/GPL-3.0-only>
 */
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Box, Text, useInput } from "ink";
 import Spinner from "ink-spinner";
 import { DateTime } from "luxon";
 import { runCommand } from "./Screen.js";
 import OutputBox from "../components/OutputBox.js";
 import SelectList from "../components/SelectList.js";
-const ActionScreen = ({ command, actions, listHeader, screenWidth, screenHeight }) => {
+const ActionScreen = ({ command, actions, listHeader, onHint, screenWidth, screenHeight }) => {
     const [running, setRunning] = useState(false);
     const [selected, setSelected] = useState(0);
     const [lines, setLines] = useState([]);
     const runningRef = useRef(false);
+    /*  delegate hint text to the master hint bar  */
+    useEffect(() => {
+        onHint([
+            { key: "↑ ↓", desc: "navigate actions" },
+            { key: "⏎", desc: "execute action" }
+        ]);
+    }, [onHint]);
     const handleSelect = async (item) => {
         if (runningRef.current)
             return;
