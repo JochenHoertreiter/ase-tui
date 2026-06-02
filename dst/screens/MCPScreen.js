@@ -13,6 +13,7 @@ import stripAnsi from "strip-ansi";
 import { execa } from "execa";
 import { SelectIndicator, SelectItem, runCommand } from "./Screen.js";
 import OutputBox from "../components/OutputBox.js";
+import { logError } from "../components/Logger.js";
 /*  parse "ase setup mcp list" table output into server list  */
 const parseMcpList = (stdout) => {
     const servers = [];
@@ -58,7 +59,7 @@ const MCPScreen = ({ screenWidth, screenHeight }) => {
                 }
             }
         };
-        load().catch((e) => { console.error("[ase-tui] unexpected:", e); });
+        load().catch((e) => { logError("MCPScreen", "unexpected", e); });
         return () => { cancelled = true; };
     }, []);
     const serverItems = servers.map((s, i) => ({

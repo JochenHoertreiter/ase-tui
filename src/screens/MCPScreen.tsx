@@ -13,6 +13,7 @@ import stripAnsi                      from "strip-ansi"
 import { execa }                      from "execa"
 import { SelectIndicator, SelectItem, runCommand, type ActionItem } from "./Screen.js"
 import OutputBox                      from "../components/OutputBox.js"
+import { logError }                  from "../components/Logger.js"
 
 type McpServer = { id: string, name: string }
 
@@ -66,7 +67,7 @@ const MCPScreen = ({ screenWidth, screenHeight }: Props) => {
                 }
             }
         }
-        load().catch((e) => { console.error("[ase-tui] unexpected:", e) })
+        load().catch((e) => { logError("MCPScreen", "unexpected", e) })
         return () => { cancelled = true }
     }, [])
 

@@ -11,6 +11,7 @@ import Spinner                                        from "ink-spinner"
 import { execa }                                      from "execa"
 import { runCommand, type ActionItem }                from "./Screen.js"
 import OutputBox                                      from "../components/OutputBox.js"
+import { logError }                                   from "../components/Logger.js"
 import type { HintSegment }                           from "../components/HintBar.js"
 
 type Focus = "tasks" | "actions" | "preview" | "rename"
@@ -70,7 +71,7 @@ const TaskScreen = ({ escBlockedRef, onHint, screenWidth, screenHeight }: Props)
             if (!cancelled)
                 setLoading(false)
         }
-        load().catch((e) => { if (!cancelled) console.error("[ase-tui] unexpected:", e) })
+        load().catch((e) => { if (!cancelled) logError("TaskScreen", "unexpected", e) })
         return () => { cancelled = true }
     }, [])
 
@@ -259,7 +260,7 @@ const TaskScreen = ({ escBlockedRef, onHint, screenWidth, screenHeight }: Props)
             else if (key.return && tasks.length > 0)
                 setFocus("actions")
             else if (input === "p" && tasks.length > 0)
-                loadPreview().catch((e) => { console.error("[ase-tui] unexpected:", e) })
+                loadPreview().catch((e) => { logError("TaskScreen", "unexpected", e) })
         }
         /*  focus: actions  */
         if (focus === "actions") {
@@ -271,10 +272,10 @@ const TaskScreen = ({ escBlockedRef, onHint, screenWidth, screenHeight }: Props)
                 setFocus("tasks")
             else if (key.return)
                 executeAction(TASK_ACTIONS[actionIdx]).catch((e) => {
-                    console.error("[ase-tui] unexpected:", e)
+                    logError("TaskScreen", "unexpected", e)
                 })
             else if (input === "p" && tasks.length > 0)
-                loadPreview().catch((e) => { console.error("[ase-tui] unexpected:", e) })
+                loadPreview().catch((e) => { logError("TaskScreen", "unexpected", e) })
         }
         /*  focus: preview  */
         if (focus === "preview") {

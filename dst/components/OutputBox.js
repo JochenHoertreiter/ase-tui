@@ -7,13 +7,7 @@ import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
 import { useEffect, useState, useMemo } from "react";
 import { Box, Text, useInput } from "ink";
 import wrapAnsi from "wrap-ansi";
-import fs from "node:fs";
-import path from "node:path";
-const logFile = path.resolve("outputbox.log");
-const logDebug = (data) => {
-    const line = JSON.stringify({ ts: Date.now(), ...data }) + "\n";
-    fs.appendFileSync(logFile, line, "utf8");
-};
+import { logDebug } from "./Logger.js";
 const OutputBox = ({ lines, active, maxVisible, contentWidth, borderColor = "cyan" }) => {
     const [offset, setOffset] = useState(0);
     /* number column width derived from the highest source line number */
@@ -61,7 +55,7 @@ const OutputBox = ({ lines, active, maxVisible, contentWidth, borderColor = "cya
     const thumbPos = maxOffset > 0 ?
         Math.min(barHeight - 1, Math.round((offset / maxOffset) * (barHeight - 1))) :
         0;
-    logDebug({ lines: lines.length, contentWidth, innerW, innerH, total, maxVisible, needBar, offset, maxOffset, thumbPos, barHeight });
+    logDebug("OutputBox", "render", { lines: lines.length, contentWidth, innerW, innerH, total, maxVisible, needBar, offset, maxOffset, thumbPos, barHeight });
     return (_jsxs(Box, { flexDirection: 'row', borderStyle: 'round', borderColor: borderColor, width: contentWidth, height: maxVisible, children: [_jsx(Box, { flexDirection: 'column', flexGrow: 1, paddingLeft: 1, children: visible.map((line, i) => _jsxs(Box, { flexDirection: 'row', children: [_jsx(Box, { width: numW + 1, flexShrink: 0, children: _jsx(Text, { dimColor: true, children: line.cont ? "" : String(line.num).padStart(numW) }) }), _jsx(Text, { children: line.text })] }, i)) }), needBar ?
                 _jsx(Box, { flexDirection: 'column', width: 1, flexShrink: 0, children: [...Array(barHeight).keys()].map((i) => _jsx(Text, { color: 'cyan', children: i === thumbPos ? "█" : "│" }, i)) }) :
                 null] }));

@@ -12,6 +12,7 @@ import { execa }                      from "execa"
 import { DateTime }                   from "luxon"
 import { SelectIndicator, SelectItem, runCommand, type ActionItem } from "./Screen.js"
 import OutputBox                      from "../components/OutputBox.js"
+import { logError }                  from "../components/Logger.js"
 
 const actions: ActionItem[] = [
     { label: "Start service",  value: "start"  },
@@ -42,7 +43,7 @@ const ServiceScreen = ({ screenWidth, screenHeight }: Props) => {
             if (!cancelled)
                 setStatusLoading(false)
         }
-        load().catch((e) => { console.error("[ase-tui] unexpected:", e) })
+        load().catch((e) => { logError("ServiceScreen", "unexpected", e) })
         return () => { cancelled = true }
     }, [])
 

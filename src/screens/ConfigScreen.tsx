@@ -11,6 +11,7 @@ import Spinner                              from "ink-spinner"
 import { execa }                            from "execa"
 import stripAnsi                            from "strip-ansi"
 import { SelectIndicator, SelectItem, type ActionItem } from "./Screen.js"
+import { logError }                         from "../components/Logger.js"
 
 /*  parse "ase config list" table output into a map of key -> { value, scope }  */
 const parseConfigList = (stdout: string): Map<string, { value: string, scope: string }> => {
@@ -118,7 +119,7 @@ const ConfigScreen = ({ screenWidth: _screenWidth, screenHeight: _screenHeight }
                 }
             }
         }
-        load().catch((e) => { console.error("[ase-tui] unexpected:", e) })
+        load().catch((e) => { logError("ConfigScreen", "unexpected", e) })
         return () => { cancelled = true }
     }, [])
 

@@ -10,6 +10,7 @@ import Spinner from "ink-spinner";
 import { execa } from "execa";
 import { runCommand } from "./Screen.js";
 import OutputBox from "../components/OutputBox.js";
+import { logError } from "../components/Logger.js";
 const TASK_ACTIONS = [
     { label: "Switch", value: "switch" },
     { label: "Delete", value: "delete" },
@@ -55,7 +56,7 @@ const TaskScreen = ({ escBlockedRef, onHint, screenWidth, screenHeight }) => {
                 setLoading(false);
         };
         load().catch((e) => { if (!cancelled)
-            console.error("[ase-tui] unexpected:", e); });
+            logError("TaskScreen", "unexpected", e); });
         return () => { cancelled = true; };
     }, []);
     /*  sync escBlockedRef so App's global ESC handler knows when to block  */
@@ -235,7 +236,7 @@ const TaskScreen = ({ escBlockedRef, onHint, screenWidth, screenHeight }) => {
             else if (key.return && tasks.length > 0)
                 setFocus("actions");
             else if (input === "p" && tasks.length > 0)
-                loadPreview().catch((e) => { console.error("[ase-tui] unexpected:", e); });
+                loadPreview().catch((e) => { logError("TaskScreen", "unexpected", e); });
         }
         /*  focus: actions  */
         if (focus === "actions") {
@@ -247,10 +248,10 @@ const TaskScreen = ({ escBlockedRef, onHint, screenWidth, screenHeight }) => {
                 setFocus("tasks");
             else if (key.return)
                 executeAction(TASK_ACTIONS[actionIdx]).catch((e) => {
-                    console.error("[ase-tui] unexpected:", e);
+                    logError("TaskScreen", "unexpected", e);
                 });
             else if (input === "p" && tasks.length > 0)
-                loadPreview().catch((e) => { console.error("[ase-tui] unexpected:", e); });
+                loadPreview().catch((e) => { logError("TaskScreen", "unexpected", e); });
         }
         /*  focus: preview  */
         if (focus === "preview") {

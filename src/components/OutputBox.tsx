@@ -7,14 +7,7 @@
 import { useEffect, useState, useMemo } from "react"
 import { Box, Text, useInput } from "ink"
 import wrapAnsi                from "wrap-ansi"
-import fs                      from "node:fs"
-import path                    from "node:path"
-
-const logFile = path.resolve("outputbox.log")
-const logDebug = (data: object) => {
-    const line = JSON.stringify({ ts: Date.now(), ...data }) + "\n"
-    fs.appendFileSync(logFile, line, "utf8")
-}
+import { logDebug }            from "./Logger.js"
 
 type Props = {
     lines:        string[]
@@ -83,7 +76,7 @@ const OutputBox = ({ lines, active, maxVisible, contentWidth, borderColor = "cya
         Math.min(barHeight - 1, Math.round((offset / maxOffset) * (barHeight - 1))) :
         0
 
-    logDebug({ lines: lines.length, contentWidth, innerW, innerH, total, maxVisible, needBar, offset, maxOffset, thumbPos, barHeight })
+    logDebug("OutputBox", "render", { lines: lines.length, contentWidth, innerW, innerH, total, maxVisible, needBar, offset, maxOffset, thumbPos, barHeight })
 
     return (
         <Box flexDirection='row' borderStyle='round' borderColor={borderColor} width={contentWidth} height={maxVisible}>
