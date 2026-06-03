@@ -231,13 +231,13 @@ const ConfigScreen = ({ escBlockedRef, onHint, screenWidth: _screenWidth, screen
 
     const hdr = (
         <Text>
-            <Text color='blue'>{"  "}{pad("KEY",     COL_W.key    )}</Text>
+            <Text color='cyan'>{"  "}{pad("KEY",     COL_W.key    )}</Text>
             {"  "}
-            <Text color='blue'>{pad("DEFAULT", COL_W.default)}</Text>
+            <Text color='cyan'>{pad("DEFAULT", COL_W.default)}</Text>
             {"  "}
-            <Text color='blue'>{pad("USER",    COL_W.user   )}</Text>
+            <Text color='cyan'>{pad("USER",    COL_W.user   )}</Text>
             {"  "}
-            <Text color='blue'>{pad("PROJECT", COL_W.project)}</Text>
+            <Text color='cyan'>{pad("PROJECT", COL_W.project)}</Text>
         </Text>
     )
 
@@ -259,7 +259,7 @@ const ConfigScreen = ({ escBlockedRef, onHint, screenWidth: _screenWidth, screen
                             const indicator  = isSelected ? <Text color='cyan'>▶ </Text> : <Text>{"  "}</Text>
                             const projectCol = (mode === "edit" && isSelected) ?
                                 <Text color='cyan'>{pad(inputVal, COL_W.project)}<Text color='cyan'>█</Text></Text> :
-                                <Text color='cyan'>{pad(r.project, COL_W.project)}</Text>
+                                <Text color='gray'>{pad(r.project, COL_W.project)}</Text>
                             return (
                                 <Text key={r.key}>
                                     {indicator}

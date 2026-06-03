@@ -192,7 +192,7 @@ const ConfigScreen = ({ escBlockedRef, onHint, screenWidth: _screenWidth, screen
             setOutput(`Error: ${err instanceof Error ? err.message : String(err)}`);
         }
     };
-    const hdr = (_jsxs(Text, { children: [_jsxs(Text, { color: 'blue', children: ["  ", pad("KEY", COL_W.key)] }), "  ", _jsx(Text, { color: 'blue', children: pad("DEFAULT", COL_W.default) }), "  ", _jsx(Text, { color: 'blue', children: pad("USER", COL_W.user) }), "  ", _jsx(Text, { color: 'blue', children: pad("PROJECT", COL_W.project) })] }));
+    const hdr = (_jsxs(Text, { children: [_jsxs(Text, { color: 'cyan', children: ["  ", pad("KEY", COL_W.key)] }), "  ", _jsx(Text, { color: 'cyan', children: pad("DEFAULT", COL_W.default) }), "  ", _jsx(Text, { color: 'cyan', children: pad("USER", COL_W.user) }), "  ", _jsx(Text, { color: 'cyan', children: pad("PROJECT", COL_W.project) })] }));
     const sep = (_jsx(Text, { color: 'gray', children: "─".repeat(COL_W.key + COL_W.default + COL_W.user + COL_W.project + 8) }));
     return (_jsx(Box, { flexDirection: 'column', padding: 1, children: loading ?
             _jsxs(Text, { children: [_jsx(Spinner, { type: 'dots' }), " Loading..."] }) :
@@ -203,7 +203,7 @@ const ConfigScreen = ({ escBlockedRef, onHint, screenWidth: _screenWidth, screen
                             const indicator = isSelected ? _jsx(Text, { color: 'cyan', children: "\u25B6 " }) : _jsx(Text, { children: "  " });
                             const projectCol = (mode === "edit" && isSelected) ?
                                 _jsxs(Text, { color: 'cyan', children: [pad(inputVal, COL_W.project), _jsx(Text, { color: 'cyan', children: "\u2588" })] }) :
-                                _jsx(Text, { color: 'cyan', children: pad(r.project, COL_W.project) });
+                                _jsx(Text, { color: 'gray', children: pad(r.project, COL_W.project) });
                             return (_jsxs(Text, { children: [indicator, _jsx(Text, { color: 'white', children: pad(r.key, COL_W.key) }), "  ", _jsx(Text, { color: 'gray', children: pad(r.default, COL_W.default) }), "  ", _jsx(Text, { color: 'yellow', children: pad(r.user, COL_W.user) }), "  ", projectCol] }, r.key));
                         }), _jsx(Text, { children: " " }), mode === "preset" ?
                             _jsx(Box, { flexDirection: 'column', children: _jsx(SelectList, { items: PRESET_ITEMS, selectedIndex: presetIdx, isFocused: true, header: 'Select preset:' }) }) :
