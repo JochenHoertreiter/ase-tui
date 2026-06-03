@@ -14,6 +14,8 @@ import OutputBox                       from "../components/OutputBox.js"
 import SelectList                      from "../components/SelectList.js"
 import type { HintSegment }            from "../components/HintBar.js"
 
+type Focus = "commands" | "output"
+
 const actions: ActionItem[] = [
     { label: "Install",   value: "install"   },
     { label: "Update",    value: "update"    },
@@ -29,37 +31,54 @@ type Props = {
     screenHeight:  number
 }
 
-const SetupScreen = ({ onHint, screenWidth, screenHeight }: Props) => {
+const SetupScreen = ({ escBlockedRef, onHint, screenWidth, screenHeight }: Props) => {
     const [ running,    setRunning    ] = useState(false)
     const [ selected,   setSelected   ] = useState(0)
-    const [ lines,      setLines      ] = useState<string[]>([])
+    const [ focus,      setFocus      ] = useState<Focus>("commands")
+    const [ outputs,    setOutputs    ] = useState<Record<string, string[]>>({})
     const runningRef = useRef(false)
 
-    /*  delegate hint text to the master hint bar  */
+    /*  output remembered per command; switching commands shows its last output  */
+    const lines = outputs[actions[selected].value] ?? []
+
+    /*  sync escBlockedRef so App's global ESC handler knows when to block  */
     useEffect(() => {
-        onHint([
-            { key: "↑ ↓", desc: "navigate actions" },
-            { key: "⏎",   desc: "execute action"   }
-        ])
-    }, [ onHint ])
+        escBlockedRef.current = focus !== "commands"
+        return () => { escBlockedRef.current = false }
+    }, [ focus, escBlockedRef ])
+
+    /*  delegate focus-dependent hint text to the master hint bar  */
+    useEffect(() => {
+        if (focus === "commands")
+            onHint([
+                { key: "↑ ↓", desc: "navigate actions" },
+                { key: "⏎",   desc: "execute action"   },
+                { key: "o",   desc: "output"           }
+            ])
+        else
+            onHint([
+                { key: "↑ ↓ / PgUp/PgDn", desc: "scroll output" },
+                { key: "ESC",             desc: "back"          }
+            ])
+    }, [ focus, onHint ])
 
     const handleSelect = async (item: ActionItem) => {
         if (runningRef.current)
             return
         runningRef.current = true
         setRunning(true)
-        setLines([])
+        setOutputs((prev) => ({ ...prev, [item.value]: [] }))
         let count = 0
         try {
             await runCommand([ "setup", item.value ], (line) => {
-                setLines((prev) => [ ...prev, line ])
+                setOutputs((prev) => ({ ...prev, [item.value]: [ ...(prev[item.value] ?? []), line ] }))
                 count++
             })
             if (count === 0)
-                setLines([ `[${DateTime.now().toFormat("yyyy-LL-dd HH:mm:ss.SSS")}] done` ])
+                setOutputs((prev) => ({ ...prev, [item.value]: [ `[${DateTime.now().toFormat("yyyy-LL-dd HH:mm:ss.SSS")}] done` ] }))
         }
         catch (err) {
-            setLines((prev) => [ ...prev, `Error: ${err instanceof Error ? err.message : String(err)}` ])
+            setOutputs((prev) => ({ ...prev, [item.value]: [ ...(prev[item.value] ?? []), `Error: ${err instanceof Error ? err.message : String(err)}` ] }))
         }
         finally {
             runningRef.current = false
@@ -67,33 +86,55 @@ const SetupScreen = ({ onHint, screenWidth, screenHeight }: Props) => {
         }
     }
 
-    useInput((_input, key) => {
+    useInput((input, key) => {
         if (runningRef.current)
             return
-        if (key.upArrow)
-            setSelected((s) => Math.max(0, s - 1))
-        else if (key.downArrow)
-            setSelected((s) => Math.min(actions.length - 1, s + 1))
-        else if (key.return && actions.length > 0)
-            handleSelect(actions[selected]).catch(() => {})
+        /*  focus: commands  */
+        if (focus === "commands") {
+            if (key.upArrow)
+                setSelected((s) => Math.max(0, s - 1))
+            else if (key.downArrow)
+                setSelected((s) => Math.min(actions.length - 1, s + 1))
+            else if (key.return && actions.length > 0) {
+                setFocus("output")
+                handleSelect(actions[selected]).catch(() => {})
+            }
+            else if (input === "o")
+                setFocus("output")
+        }
+        /*  focus: output  */
+        if (focus === "output") {
+            if (key.escape)
+                setFocus("commands")
+            /*  ↑↓ and pageUp/pageDown are handled by OutputBox internally  */
+        }
     })
 
     /* left column: fixed width for action list */
     const actionsW = 20
     const outputW  = Math.max(1, screenWidth  - actionsW)
-    const outputH  = Math.max(1, screenHeight)
+    const outputH  = Math.max(1, screenHeight - 1)
 
     return (
         <Box flexDirection='row' padding={1}>
             <Box flexDirection='column' width={actionsW}>
                 {running ?
                     <Box flexDirection='column'>
-                        <Text color='gray'>Commands</Text>
+                        <Text color={focus === "commands" ? "cyan" : "gray"}>Commands</Text>
                         <Text><Spinner type='dots' /> Running...</Text>
                     </Box> :
-                    <SelectList items={actions} selectedIndex={selected} isFocused header='Commands' />}
+                    <SelectList items={actions} selectedIndex={selected} isFocused={focus === "commands"} header='Commands' />}
             </Box>
-            <OutputBox lines={lines} active={!running} maxVisible={outputH} contentWidth={outputW} />
+            <Box flexDirection='column' width={outputW}>
+                <Text color={focus === "output" ? "cyan" : "gray"}>Command output</Text>
+                <OutputBox
+                    lines={lines}
+                    active={focus === "output"}
+                    maxVisible={outputH}
+                    contentWidth={outputW}
+                    borderColor={focus === "output" ? "cyan" : "gray"}
+                />
+            </Box>
         </Box>
     )
 }

@@ -2,6 +2,8 @@
 
 ## 0.0.6 (2026-06-03)
 
+-   IMPROVEMENT: add focus handling, per-command output memory and `Command output` header to `SetupScreen`
+
 ## 0.0.5 (2026-06-03)
 
 -   FEATURE:     add central `Logger` component with log levels, ring buffer, `ASE_TUI_DEBUG` gate, file sink, `useDebugLog` hook and `DebugPanel`
