@@ -149,7 +149,7 @@ const MCPScreen = ({ escBlockedRef, onHint, screenWidth, screenHeight }) => {
     const outputH = Math.max(1, screenHeight - 2);
     return (_jsx(Box, { flexDirection: 'column', padding: 1, children: loading ?
             _jsxs(Text, { children: [_jsx(Spinner, { type: 'dots' }), " Loading MCP servers..."] }) :
-            _jsxs(Box, { flexDirection: 'row', children: [_jsx(Box, { flexDirection: 'column', width: serversW, children: _jsx(SelectList, { items: serverItems, selectedIndex: selected, isFocused: focus === "servers", header: 'MCP Servers' }) }), _jsx(Box, { flexDirection: 'column', width: actionsW, children: running ?
+            _jsxs(Box, { flexDirection: 'row', children: [_jsx(Box, { flexDirection: 'column', width: serversW, children: _jsx(SelectList, { items: serverItems, selectedIndex: selected, isFocused: focus === "servers", header: 'MCP Servers', maxVisible: outputH }) }), _jsx(Box, { flexDirection: 'column', width: actionsW, children: running ?
                             _jsxs(Box, { flexDirection: 'column', children: [_jsx(Text, { color: 'gray', children: "Action" }), _jsxs(Text, { children: [_jsx(Spinner, { type: 'dots' }), " Running..."] })] }) :
                             _jsx(SelectList, { items: ACTIONS, selectedIndex: selectedAction, isFocused: focus === "actions", header: 'Action' }) }), _jsx(OutputBox, { lines: lines, active: !running, maxVisible: outputH, contentWidth: outputW })] }) }));
 };

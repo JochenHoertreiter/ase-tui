@@ -297,7 +297,7 @@ const TaskScreen = ({ escBlockedRef, onHint, screenWidth, screenHeight }: Props)
     const taskPanel = (
         <Box flexDirection='row'>
             <Box flexDirection='column' width={listW}>
-                <SelectList items={tasks} selectedIndex={selected} isFocused={focus === "tasks"} header='Tasks' />
+                <SelectList items={tasks} selectedIndex={selected} isFocused={focus === "tasks"} header='Tasks' maxVisible={previewH} />
             </Box>
             <Box flexDirection='column' width={actionsW}>
                 {focus === "rename" ?

@@ -268,7 +268,7 @@ const TaskScreen = ({ escBlockedRef, onHint, screenWidth, screenHeight }) => {
     const actionsW = 14;
     const previewW = Math.max(1, screenWidth - listW - actionsW);
     const previewH = Math.max(1, screenHeight - 4);
-    const taskPanel = (_jsxs(Box, { flexDirection: 'row', children: [_jsx(Box, { flexDirection: 'column', width: listW, children: _jsx(SelectList, { items: tasks, selectedIndex: selected, isFocused: focus === "tasks", header: 'Tasks' }) }), _jsx(Box, { flexDirection: 'column', width: actionsW, children: focus === "rename" ?
+    const taskPanel = (_jsxs(Box, { flexDirection: 'row', children: [_jsx(Box, { flexDirection: 'column', width: listW, children: _jsx(SelectList, { items: tasks, selectedIndex: selected, isFocused: focus === "tasks", header: 'Tasks', maxVisible: previewH }) }), _jsx(Box, { flexDirection: 'column', width: actionsW, children: focus === "rename" ?
                     _jsxs(Box, { flexDirection: 'column', children: [_jsx(Text, { color: 'gray', children: "Actions" }), _jsx(Text, { color: 'cyan', children: "New name:" }), _jsxs(Text, { color: 'white', children: [renameVal, _jsx(Text, { color: 'cyan', children: "\u2588" })] })] }) :
                     running ?
                         _jsxs(Box, { flexDirection: 'column', children: [_jsx(Text, { color: focus === "actions" ? "cyan" : "gray", children: "Actions" }), _jsx(Spinner, { type: 'dots' })] }) :

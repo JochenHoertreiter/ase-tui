@@ -93,7 +93,7 @@ const OutputBox = ({ lines, active, maxVisible, contentWidth, borderColor = "cya
             {needBar ?
                 <Box flexDirection='column' width={1} flexShrink={0}>
                     {[ ...Array(barHeight).keys() ].map((i) =>
-                        <Text key={i} color='cyan'>{i === thumbPos ? "█" : "│"}</Text>
+                        <Text key={i} color={active ? "cyan" : "gray"}>{i === thumbPos ? "█" : "│"}</Text>
                     )}
                 </Box> :
                 null}

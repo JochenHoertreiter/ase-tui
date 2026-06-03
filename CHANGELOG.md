@@ -2,7 +2,9 @@
 
 ## 0.0.6 (2026-06-03)
 
+-   FEATURE:     make `SelectList` scrollable with a windowed view and scrollbar when items exceed available height
 -   IMPROVEMENT: add focus handling, per-command output memory and `Command output` header to `SetupScreen`
+-   REFACTOR:    adjust styling of `ConfigScreen`
 
 ## 0.0.5 (2026-06-03)
 

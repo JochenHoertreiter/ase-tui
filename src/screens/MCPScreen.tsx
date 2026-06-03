@@ -178,7 +178,7 @@ const MCPScreen = ({ escBlockedRef, onHint, screenWidth, screenHeight }: Props) 
                 <Text><Spinner type='dots' /> Loading MCP servers...</Text> :
                 <Box flexDirection='row'>
                     <Box flexDirection='column' width={serversW}>
-                        <SelectList items={serverItems} selectedIndex={selected} isFocused={focus === "servers"} header='MCP Servers' />
+                        <SelectList items={serverItems} selectedIndex={selected} isFocused={focus === "servers"} header='MCP Servers' maxVisible={outputH} />
                     </Box>
                     <Box flexDirection='column' width={actionsW}>
                         {running ?
