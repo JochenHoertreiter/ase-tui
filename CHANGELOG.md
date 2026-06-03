@@ -1,13 +1,19 @@
 # ChangeLog
 
-## 0.0.5 (2026-06-02)
+## 0.0.6 (2026-06-03)
+
+## 0.0.5 (2026-06-03)
 
 -   FEATURE:     add central `Logger` component with log levels, ring buffer, `ASE_TUI_DEBUG` gate, file sink, `useDebugLog` hook and `DebugPanel`
 -   FEATURE:     add `AGENTS.md` with agent instructions for build/test, generated `dst/` files, and versioning
 -   IMPROVEMENT: route all screen logging through central `Logger` instead of inline `console.*` calls
+-   IMPROVEMENT: unify focus, ESC and hint handling across all screens
+-   IMPROVEMENT: extend `AGENTS.md` with version-bump skill and instruct agent to skip generated `dst/**` files
 -   BUGFIX:      wrong `OutputBox` height led to render errors; lines got skipped/cut
+-   BUGFIX:      size MCP server list to the widest MCP server name in `MCPScreen`
 -   REFACTOR:    extract `HintBar` into its own component
 -   REFACTOR:    `OutputBox` uses `Logger` file sink instead of its own `outputbox.log`
+-   REFACTOR:    unify all screen lists into reusable `SelectList` component with focus
 
 ## 0.0.4 (2026-05-28)
 
