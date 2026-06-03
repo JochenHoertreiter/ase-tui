@@ -45,7 +45,8 @@ const TaskScreen = ({ escBlockedRef, onHint, screenWidth, screenHeight }: Props)
     const [ preview,        setPreview        ] = useState<string[]>([])
     const [ previewLoading, setPreviewLoading ] = useState(false)
     const [ running,        setRunning        ] = useState(false)
-    const [ output,         setOutput         ] = useState<string | null>(null)
+    const [ output,         setOutput         ] = useState<string[]>([])
+    const [ showOutput,     setShowOutput     ] = useState(false)
     const runningRef  = useRef(false)
     const prevFocus   = useRef<Focus>("tasks")
 
@@ -66,7 +67,7 @@ const TaskScreen = ({ escBlockedRef, onHint, screenWidth, screenHeight }: Props)
             catch (err) {
                 if (!cancelled) {
                     setTasks([])
-                    setOutput(`Error loading tasks: ${errMsg(err)}`)
+                    setActionOutput(`Error loading tasks: ${errMsg(err)}`)
                 }
             }
             if (!cancelled)
@@ -109,12 +110,19 @@ const TaskScreen = ({ escBlockedRef, onHint, screenWidth, screenHeight }: Props)
             ])
     }, [ focus, onHint ])
 
+    /*  show action result text in the shared right-hand output pane  */
+    const setActionOutput = (text: string) => {
+        setOutput(text.split("\n"))
+        setShowOutput(true)
+    }
+
     /*  load preview on demand and switch focus to preview pane  */
     const loadPreview = async () => {
         const id = tasks[selected]?.value
         if (!id)
             return
         setPreview([])
+        setShowOutput(false)
         setPreviewLoading(true)
         prevFocus.current = focus
         setFocus("preview")
@@ -148,10 +156,10 @@ const TaskScreen = ({ escBlockedRef, onHint, screenWidth, screenHeight }: Props)
             try {
                 await execa("ase", [ "config", "--scope", "project", "set", "agent.task", id ])
                 setCurrentTask(id)
-                setOutput(`Switched to task: ${id}`)
+                setActionOutput(`Switched to task: ${id}`)
             }
             catch (err) {
-                setOutput(`Error: ${errMsg(err)}`)
+                setActionOutput(`Error: ${errMsg(err)}`)
             }
             finally {
                 runningRef.current = false
@@ -170,11 +178,11 @@ const TaskScreen = ({ escBlockedRef, onHint, screenWidth, screenHeight }: Props)
                     return next
                 })
                 setPreview([])
-                setOutput(`Deleted task: ${id}`)
+                setActionOutput(`Deleted task: ${id}`)
                 setFocus("tasks")
             }
             catch (err) {
-                setOutput(`Error: ${errMsg(err)}`)
+                setActionOutput(`Error: ${errMsg(err)}`)
             }
             finally {
                 runningRef.current = false
@@ -185,9 +193,11 @@ const TaskScreen = ({ escBlockedRef, onHint, screenWidth, screenHeight }: Props)
         if (item.value === "purge") {
             runningRef.current = true
             setRunning(true)
+            setOutput([])
+            setShowOutput(true)
             try {
                 await runCommand([ "task", "purge" ], (line) => {
-                    setOutput(line)
+                    setOutput((prev) => [ ...prev, line ])
                 })
                 const listRes = await execa("ase", [ "task", "list" ])
                 const ids = listRes.stdout.trim().split("\n").filter(Boolean)
@@ -195,11 +205,11 @@ const TaskScreen = ({ escBlockedRef, onHint, screenWidth, screenHeight }: Props)
                 setSelected((s) => Math.min(s, Math.max(0, ids.length - 1)))
                 setPreview([])
                 if (ids.length === 0)
-                    setOutput("No tasks remaining after purge.")
+                    setActionOutput("No tasks remaining after purge.")
                 setFocus("tasks")
             }
             catch (err) {
-                setOutput(`Error: ${errMsg(err)}`)
+                setActionOutput(`Error: ${errMsg(err)}`)
             }
             finally {
                 runningRef.current = false
@@ -232,10 +242,10 @@ const TaskScreen = ({ escBlockedRef, onHint, screenWidth, screenHeight }: Props)
                         ))
                         if (currentTask === oldId)
                             setCurrentTask(newId)
-                        setOutput(`Renamed: ${oldId} → ${newId}`)
+                        setActionOutput(`Renamed: ${oldId} → ${newId}`)
                     })
                     .catch((err) => {
-                        setOutput(`Error: ${errMsg(err)}`)
+                        setActionOutput(`Error: ${errMsg(err)}`)
                     })
                     .finally(() => {
                         runningRef.current = false
@@ -300,25 +310,31 @@ const TaskScreen = ({ escBlockedRef, onHint, screenWidth, screenHeight }: Props)
                 <SelectList items={tasks} selectedIndex={selected} isFocused={focus === "tasks"} header='Tasks' maxVisible={previewH} />
             </Box>
             <Box flexDirection='column' width={actionsW}>
-                {focus === "rename" ?
-                    <Box flexDirection='column'>
-                        <Text color='gray'>Actions</Text>
-                        <Text color='cyan'>New name:</Text>
-                        <Text color='white'>{renameVal}<Text color='cyan'>█</Text></Text>
-                    </Box> :
-                    <SelectList items={TASK_ACTIONS} selectedIndex={actionIdx} isFocused={focus === "actions"} header='Actions' maxVisible={previewH} busyIndex={running ? actionIdx : undefined} />}
+                <SelectList items={TASK_ACTIONS} selectedIndex={actionIdx} isFocused={focus === "actions" || focus === "rename"} header='Actions' maxVisible={previewH} busyIndex={running ? actionIdx : undefined} />
             </Box>
             <Box flexDirection='column' width={previewW}>
-                <Text color={focus === "preview" ? "cyan" : "gray"}>
-                    {previewLoading ? <><Spinner type='dots' /> loading</> : "Task Preview"}
-                </Text>
-                <OutputBox
-                    lines={preview}
-                    active={focus === "preview"}
-                    maxVisible={previewH}
-                    contentWidth={previewW}
-                    borderColor={focus === "preview" ? "cyan" : "gray"}
-                />
+                {focus === "rename" ?
+                    <>
+                        <Text color='cyan'>New name:</Text>
+                        <Box borderStyle='round' borderColor='cyan' width={previewW} height={previewH}>
+                            <Box paddingLeft={1}>
+                                <Text color='white'>{renameVal}<Text color='cyan'>█</Text></Text>
+                            </Box>
+                        </Box>
+                    </> :
+                    <>
+                        <Text color={focus === "preview" ? "cyan" : "gray"}>
+                            {previewLoading ? <><Spinner type='dots' /> loading</> :
+                                showOutput ? "Action Output" : "Task Preview"}
+                        </Text>
+                        <OutputBox
+                            lines={showOutput ? output : preview}
+                            active={focus === "preview"}
+                            maxVisible={previewH}
+                            contentWidth={previewW}
+                            borderColor={focus === "preview" ? "cyan" : "gray"}
+                        />
+                    </>}
             </Box>
         </Box>
     )
@@ -330,7 +346,6 @@ const TaskScreen = ({ escBlockedRef, onHint, screenWidth, screenHeight }: Props)
                 <Text>Current task: <Text color='yellow'>{currentTask}</Text></Text>}
             <Text> </Text>
             {!loading && taskPanel}
-            {output !== null && <Text color='yellow'>{output}</Text>}
         </Box>
     )
 }

@@ -30,7 +30,8 @@ const TaskScreen = ({ escBlockedRef, onHint, screenWidth, screenHeight }) => {
     const [preview, setPreview] = useState([]);
     const [previewLoading, setPreviewLoading] = useState(false);
     const [running, setRunning] = useState(false);
-    const [output, setOutput] = useState(null);
+    const [output, setOutput] = useState([]);
+    const [showOutput, setShowOutput] = useState(false);
     const runningRef = useRef(false);
     const prevFocus = useRef("tasks");
     useEffect(() => {
@@ -50,7 +51,7 @@ const TaskScreen = ({ escBlockedRef, onHint, screenWidth, screenHeight }) => {
             catch (err) {
                 if (!cancelled) {
                     setTasks([]);
-                    setOutput(`Error loading tasks: ${errMsg(err)}`);
+                    setActionOutput(`Error loading tasks: ${errMsg(err)}`);
                 }
             }
             if (!cancelled)
@@ -91,12 +92,18 @@ const TaskScreen = ({ escBlockedRef, onHint, screenWidth, screenHeight }) => {
                 { key: "ESC", desc: "back" }
             ]);
     }, [focus, onHint]);
+    /*  show action result text in the shared right-hand output pane  */
+    const setActionOutput = (text) => {
+        setOutput(text.split("\n"));
+        setShowOutput(true);
+    };
     /*  load preview on demand and switch focus to preview pane  */
     const loadPreview = async () => {
         const id = tasks[selected]?.value;
         if (!id)
             return;
         setPreview([]);
+        setShowOutput(false);
         setPreviewLoading(true);
         prevFocus.current = focus;
         setFocus("preview");
@@ -129,10 +136,10 @@ const TaskScreen = ({ escBlockedRef, onHint, screenWidth, screenHeight }) => {
             try {
                 await execa("ase", ["config", "--scope", "project", "set", "agent.task", id]);
                 setCurrentTask(id);
-                setOutput(`Switched to task: ${id}`);
+                setActionOutput(`Switched to task: ${id}`);
             }
             catch (err) {
-                setOutput(`Error: ${errMsg(err)}`);
+                setActionOutput(`Error: ${errMsg(err)}`);
             }
             finally {
                 runningRef.current = false;
@@ -151,11 +158,11 @@ const TaskScreen = ({ escBlockedRef, onHint, screenWidth, screenHeight }) => {
                     return next;
                 });
                 setPreview([]);
-                setOutput(`Deleted task: ${id}`);
+                setActionOutput(`Deleted task: ${id}`);
                 setFocus("tasks");
             }
             catch (err) {
-                setOutput(`Error: ${errMsg(err)}`);
+                setActionOutput(`Error: ${errMsg(err)}`);
             }
             finally {
                 runningRef.current = false;
@@ -166,9 +173,11 @@ const TaskScreen = ({ escBlockedRef, onHint, screenWidth, screenHeight }) => {
         if (item.value === "purge") {
             runningRef.current = true;
             setRunning(true);
+            setOutput([]);
+            setShowOutput(true);
             try {
                 await runCommand(["task", "purge"], (line) => {
-                    setOutput(line);
+                    setOutput((prev) => [...prev, line]);
                 });
                 const listRes = await execa("ase", ["task", "list"]);
                 const ids = listRes.stdout.trim().split("\n").filter(Boolean);
@@ -176,11 +185,11 @@ const TaskScreen = ({ escBlockedRef, onHint, screenWidth, screenHeight }) => {
                 setSelected((s) => Math.min(s, Math.max(0, ids.length - 1)));
                 setPreview([]);
                 if (ids.length === 0)
-                    setOutput("No tasks remaining after purge.");
+                    setActionOutput("No tasks remaining after purge.");
                 setFocus("tasks");
             }
             catch (err) {
-                setOutput(`Error: ${errMsg(err)}`);
+                setActionOutput(`Error: ${errMsg(err)}`);
             }
             finally {
                 runningRef.current = false;
@@ -210,10 +219,10 @@ const TaskScreen = ({ escBlockedRef, onHint, screenWidth, screenHeight }) => {
                     setTasks((prev) => prev.map((t) => t.value === oldId ? { label: newId, value: newId } : t));
                     if (currentTask === oldId)
                         setCurrentTask(newId);
-                    setOutput(`Renamed: ${oldId} → ${newId}`);
+                    setActionOutput(`Renamed: ${oldId} → ${newId}`);
                 })
                     .catch((err) => {
-                    setOutput(`Error: ${errMsg(err)}`);
+                    setActionOutput(`Error: ${errMsg(err)}`);
                 })
                     .finally(() => {
                     runningRef.current = false;
@@ -268,11 +277,12 @@ const TaskScreen = ({ escBlockedRef, onHint, screenWidth, screenHeight }) => {
     const actionsW = 14;
     const previewW = Math.max(1, screenWidth - listW - actionsW);
     const previewH = Math.max(1, screenHeight - 4);
-    const taskPanel = (_jsxs(Box, { flexDirection: 'row', children: [_jsx(Box, { flexDirection: 'column', width: listW, children: _jsx(SelectList, { items: tasks, selectedIndex: selected, isFocused: focus === "tasks", header: 'Tasks', maxVisible: previewH }) }), _jsx(Box, { flexDirection: 'column', width: actionsW, children: focus === "rename" ?
-                    _jsxs(Box, { flexDirection: 'column', children: [_jsx(Text, { color: 'gray', children: "Actions" }), _jsx(Text, { color: 'cyan', children: "New name:" }), _jsxs(Text, { color: 'white', children: [renameVal, _jsx(Text, { color: 'cyan', children: "\u2588" })] })] }) :
-                    _jsx(SelectList, { items: TASK_ACTIONS, selectedIndex: actionIdx, isFocused: focus === "actions", header: 'Actions', maxVisible: previewH, busyIndex: running ? actionIdx : undefined }) }), _jsxs(Box, { flexDirection: 'column', width: previewW, children: [_jsx(Text, { color: focus === "preview" ? "cyan" : "gray", children: previewLoading ? _jsxs(_Fragment, { children: [_jsx(Spinner, { type: 'dots' }), " loading"] }) : "Task Preview" }), _jsx(OutputBox, { lines: preview, active: focus === "preview", maxVisible: previewH, contentWidth: previewW, borderColor: focus === "preview" ? "cyan" : "gray" })] })] }));
+    const taskPanel = (_jsxs(Box, { flexDirection: 'row', children: [_jsx(Box, { flexDirection: 'column', width: listW, children: _jsx(SelectList, { items: tasks, selectedIndex: selected, isFocused: focus === "tasks", header: 'Tasks', maxVisible: previewH }) }), _jsx(Box, { flexDirection: 'column', width: actionsW, children: _jsx(SelectList, { items: TASK_ACTIONS, selectedIndex: actionIdx, isFocused: focus === "actions" || focus === "rename", header: 'Actions', maxVisible: previewH, busyIndex: running ? actionIdx : undefined }) }), _jsx(Box, { flexDirection: 'column', width: previewW, children: focus === "rename" ?
+                    _jsxs(_Fragment, { children: [_jsx(Text, { color: 'cyan', children: "New name:" }), _jsx(Box, { borderStyle: 'round', borderColor: 'cyan', width: previewW, height: previewH, children: _jsx(Box, { paddingLeft: 1, children: _jsxs(Text, { color: 'white', children: [renameVal, _jsx(Text, { color: 'cyan', children: "\u2588" })] }) }) })] }) :
+                    _jsxs(_Fragment, { children: [_jsx(Text, { color: focus === "preview" ? "cyan" : "gray", children: previewLoading ? _jsxs(_Fragment, { children: [_jsx(Spinner, { type: 'dots' }), " loading"] }) :
+                                    showOutput ? "Action Output" : "Task Preview" }), _jsx(OutputBox, { lines: showOutput ? output : preview, active: focus === "preview", maxVisible: previewH, contentWidth: previewW, borderColor: focus === "preview" ? "cyan" : "gray" })] }) })] }));
     return (_jsxs(Box, { flexDirection: 'column', padding: 1, children: [loading ?
                 _jsxs(Text, { children: [_jsx(Spinner, { type: 'dots' }), " Loading..."] }) :
-                _jsxs(Text, { children: ["Current task: ", _jsx(Text, { color: 'yellow', children: currentTask })] }), _jsx(Text, { children: " " }), !loading && taskPanel, output !== null && _jsx(Text, { color: 'yellow', children: output })] }));
+                _jsxs(Text, { children: ["Current task: ", _jsx(Text, { color: 'yellow', children: currentTask })] }), _jsx(Text, { children: " " }), !loading && taskPanel] }));
 };
 export default TaskScreen;
