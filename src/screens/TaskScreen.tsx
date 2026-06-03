@@ -306,12 +306,7 @@ const TaskScreen = ({ escBlockedRef, onHint, screenWidth, screenHeight }: Props)
                         <Text color='cyan'>New name:</Text>
                         <Text color='white'>{renameVal}<Text color='cyan'>█</Text></Text>
                     </Box> :
-                    running ?
-                        <Box flexDirection='column'>
-                            <Text color={focus === "actions" ? "cyan" : "gray"}>Actions</Text>
-                            <Spinner type='dots' />
-                        </Box> :
-                        <SelectList items={TASK_ACTIONS} selectedIndex={actionIdx} isFocused={focus === "actions"} header='Actions' />}
+                    <SelectList items={TASK_ACTIONS} selectedIndex={actionIdx} isFocused={focus === "actions"} header='Actions' maxVisible={previewH} busyIndex={running ? actionIdx : undefined} />}
             </Box>
             <Box flexDirection='column' width={previewW}>
                 <Text color={focus === "preview" ? "cyan" : "gray"}>

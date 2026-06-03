@@ -36,16 +36,17 @@ const tabs = [
     { label: "MCP", value: "mcp" }
 ];
 const TITLE = "⧉ ASE — Agentic Software Engineering - Terminal User Interface (tui)";
-const BASE_HINT = [
+/* base hints; the quit key also includes ESC when no screen handles ESC itself */
+const baseHint = (escQuits) => [
     { key: "← →", desc: "navigate tabs" },
-    { key: "q", desc: "quit" }
+    { key: escQuits ? "q ESC" : "q", desc: "quit" }
 ];
 const App = () => {
     const { exit } = useApp();
     const { stdout } = useStdout();
     const escBlockedRef = useRef(false);
     const [tab, setTab] = useState(0);
-    const [hint, setHint] = useState(BASE_HINT);
+    const [hint, setHint] = useState(() => baseHint(true));
     const termSize = () => ({ termW: stdout.columns ?? 80, termH: stdout.rows ?? 24 });
     const [{ termW, termH }, setTermSize] = useState(termSize);
     useEffect(() => {
@@ -61,11 +62,11 @@ const App = () => {
             exit();
         else if (key.leftArrow) {
             setTab((t) => (t - 1 + tabs.length) % tabs.length);
-            setHint(BASE_HINT);
+            setHint(baseHint(true));
         }
         else if (key.rightArrow) {
             setTab((t) => (t + 1) % tabs.length);
-            setHint(BASE_HINT);
+            setHint(baseHint(true));
         }
     });
     /* available width inside paddingLeft={1} container */
@@ -74,7 +75,11 @@ const App = () => {
     /* each tab occupies: 1 (left border) + 1 (paddingLeft) + label + 1 (paddingRight) + 1 (right border) */
     const tabsWidth = 1 + tabs.reduce((sum, t) => sum + t.label.length + 4, 0);
     const restW = Math.max(0, termW - tabsWidth - 1);
-    const onHintCb = useCallback((s) => setHint(s ? [...s, ...BASE_HINT] : BASE_HINT), [setHint]);
+    /* quit also triggers on ESC unless the active screen handles ESC itself (escBlockedRef) */
+    const onHintCb = useCallback((s) => {
+        const base = baseHint(!escBlockedRef.current);
+        setHint(s ? [...s, ...base] : base);
+    }, [setHint]);
     return (_jsxs(Box, { flexDirection: 'column', width: termW, height: termH, children: [_jsx(Box, { paddingLeft: 1, children: _jsx(Text, { bold: true, color: 'cyan', children: cliTruncate(TITLE, innerW) }) }), _jsxs(Box, { flexDirection: 'row', paddingLeft: 1, children: [tabs.map((t, i) => i === tab ?
                         _jsx(Box, { borderStyle: BORDER_ACTIVE, borderColor: 'gray', paddingLeft: 1, paddingRight: 1, children: _jsx(Text, { color: 'cyan', children: t.label }) }, t.value) :
                         _jsx(Box, { borderStyle: BORDER_INACTIVE, borderColor: 'gray', paddingLeft: 1, paddingRight: 1, children: _jsx(Text, { color: 'gray', children: t.label }) }, t.value)), _jsx(Box, { alignSelf: 'flex-end', children: _jsx(Text, { color: 'gray', children: "─".repeat(restW) }) })] }), _jsxs(Box, { height: contentH, children: [screen === "config" && _jsx(ConfigScreen, { escBlockedRef: escBlockedRef, onHint: onHintCb, screenWidth: screenW, screenHeight: screenH }), screen === "service" && _jsx(ServiceScreen, { escBlockedRef: escBlockedRef, onHint: onHintCb, screenWidth: screenW, screenHeight: screenH }), screen === "task" && _jsx(TaskScreen, { escBlockedRef: escBlockedRef, onHint: onHintCb, screenWidth: screenW, screenHeight: screenH }), screen === "setup" && _jsx(SetupScreen, { escBlockedRef: escBlockedRef, onHint: onHintCb, screenWidth: screenW, screenHeight: screenH }), screen === "mcp" && _jsx(MCPScreen, { escBlockedRef: escBlockedRef, onHint: onHintCb, screenWidth: screenW, screenHeight: screenH })] }), _jsx(HintBar, { hint: hint, width: termW })] }));

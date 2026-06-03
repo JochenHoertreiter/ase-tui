@@ -181,12 +181,7 @@ const MCPScreen = ({ escBlockedRef, onHint, screenWidth, screenHeight }: Props) 
                         <SelectList items={serverItems} selectedIndex={selected} isFocused={focus === "servers"} header='MCP Servers' maxVisible={outputH} />
                     </Box>
                     <Box flexDirection='column' width={actionsW}>
-                        {running ?
-                            <Box flexDirection='column'>
-                                <Text color='gray'>Action</Text>
-                                <Text><Spinner type='dots' /> Running...</Text>
-                            </Box> :
-                            <SelectList items={ACTIONS} selectedIndex={selectedAction} isFocused={focus === "actions"} header='Action' />}
+                        <SelectList items={ACTIONS} selectedIndex={selectedAction} isFocused={focus === "actions"} header='Action' maxVisible={outputH} busyIndex={running ? selectedAction : undefined} />
                     </Box>
                     <OutputBox lines={lines} active={!running} maxVisible={outputH} contentWidth={outputW} />
                 </Box>}

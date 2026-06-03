@@ -45,9 +45,11 @@ const tabs: Array<{ label: string, value: Screen }> = [
 
 
 const TITLE = "⧉ ASE — Agentic Software Engineering - Terminal User Interface (tui)"
-const BASE_HINT: HintSegment[] = [
-    { key: "← →", desc: "navigate tabs" },
-    { key: "q",   desc: "quit"          }
+
+/* base hints; the quit key also includes ESC when no screen handles ESC itself */
+const baseHint = (escQuits: boolean): HintSegment[] => [
+    { key: "← →",                    desc: "navigate tabs" },
+    { key: escQuits ? "q ESC" : "q", desc: "quit"          }
 ]
 
 const App = () => {
@@ -55,7 +57,7 @@ const App = () => {
     const { stdout }    = useStdout()
     const escBlockedRef = useRef(false)
     const [ tab,  setTab  ] = useState(0)
-    const [ hint, setHint ] = useState(BASE_HINT)
+    const [ hint, setHint ] = useState(() => baseHint(true))
 
     const termSize = () => ({ termW: stdout.columns ?? 80, termH: stdout.rows ?? 24 })
     const [ { termW, termH }, setTermSize ] = useState(termSize)
@@ -75,11 +77,11 @@ const App = () => {
             exit()
         else if (key.leftArrow) {
             setTab((t) => (t - 1 + tabs.length) % tabs.length)
-            setHint(BASE_HINT)
+            setHint(baseHint(true))
         }
         else if (key.rightArrow) {
             setTab((t) => (t + 1) % tabs.length)
-            setHint(BASE_HINT)
+            setHint(baseHint(true))
         }
     })
 
@@ -92,8 +94,12 @@ const App = () => {
     const tabsWidth = 1 + tabs.reduce((sum, t) => sum + t.label.length + 4, 0)
     const restW     = Math.max(0, termW - tabsWidth - 1)
 
+    /* quit also triggers on ESC unless the active screen handles ESC itself (escBlockedRef) */
     const onHintCb = useCallback(
-        (s: HintSegment[] | null) => setHint(s ? [ ...s, ...BASE_HINT ] : BASE_HINT),
+        (s: HintSegment[] | null) => {
+            const base = baseHint(!escBlockedRef.current)
+            setHint(s ? [ ...s, ...base ] : base)
+        },
         [ setHint ]
     )
 

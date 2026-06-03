@@ -7,7 +7,6 @@
 import { useState, useRef, useEffect } from "react"
 import type { RefObject }              from "react"
 import { Box, Text, useInput }         from "ink"
-import Spinner                         from "ink-spinner"
 import { DateTime }                    from "luxon"
 import { runCommand, type ActionItem } from "./Screen.js"
 import OutputBox                       from "../components/OutputBox.js"
@@ -118,12 +117,7 @@ const SetupScreen = ({ escBlockedRef, onHint, screenWidth, screenHeight }: Props
     return (
         <Box flexDirection='row' padding={1}>
             <Box flexDirection='column' width={actionsW}>
-                {running ?
-                    <Box flexDirection='column'>
-                        <Text color={focus === "commands" ? "cyan" : "gray"}>Commands</Text>
-                        <Text><Spinner type='dots' /> Running...</Text>
-                    </Box> :
-                    <SelectList items={actions} selectedIndex={selected} isFocused={focus === "commands"} header='Commands' />}
+                <SelectList items={actions} selectedIndex={selected} isFocused={focus === "commands"} header='Commands' maxVisible={outputH + 1} busyIndex={running ? selected : undefined} />
             </Box>
             <Box flexDirection='column' width={outputW}>
                 <Text color={focus === "output" ? "cyan" : "gray"}>Command output</Text>

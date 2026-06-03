@@ -107,8 +107,10 @@ const ServiceScreen = ({ onHint, screenWidth, screenHeight }: Props) => {
             handleSelect(actions[selected]).catch(() => {})
     })
 
-    /* own elements: 1 status + 1 blank + 1 spinner/select + 1 padding = 4 */
-    const outputH = Math.max(1, screenHeight - 4)
+    /* layout: action list | output (1 status + 1 blank + 1 header + 1 padding = 4) */
+    const actionsW = 20
+    const outputW  = Math.max(1, screenWidth  - actionsW)
+    const outputH  = Math.max(1, screenHeight - 4)
 
     return (
         <Box flexDirection='column' padding={1}>
@@ -116,10 +118,15 @@ const ServiceScreen = ({ onHint, screenWidth, screenHeight }: Props) => {
                 <Text><Spinner type='dots' /> Loading status...</Text> :
                 <Text>Status: <Text color='green'>{status}</Text></Text>}
             <Text> </Text>
-            {running ?
-                <Text><Spinner type='dots' /> Running...</Text> :
-                <SelectList items={actions} selectedIndex={selected} isFocused />}
-            <OutputBox lines={lines} active={!running} maxVisible={outputH} contentWidth={screenWidth} />
+            <Box flexDirection='row'>
+                <Box flexDirection='column' width={actionsW}>
+                    <SelectList items={actions} selectedIndex={selected} isFocused header='Service' maxVisible={outputH + 1} busyIndex={running ? selected : undefined} />
+                </Box>
+                <Box flexDirection='column' width={outputW}>
+                    <Text color='gray'>Service output</Text>
+                    <OutputBox lines={lines} active={!running} maxVisible={outputH} contentWidth={outputW} />
+                </Box>
+            </Box>
         </Box>
     )
 }

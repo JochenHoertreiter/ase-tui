@@ -4,7 +4,10 @@
 
 -   FEATURE:     make `SelectList` scrollable with a windowed view and scrollbar when items exceed available height
 -   IMPROVEMENT: add focus handling, per-command output memory and `Command output` header to `SetupScreen`
+-   IMPROVEMENT: scroll every `SelectList` on overflow via `maxVisible` and show running spinner inline via `busyIndex`
+-   IMPROVEMENT: include `ESC` in the quit hint when ESC closes the app and no screen handles it
 -   REFACTOR:    adjust styling of `ConfigScreen`
+-   REFACTOR:    align `ServiceScreen` layout with other screens (action list beside output)
 
 ## 0.0.5 (2026-06-03)
 

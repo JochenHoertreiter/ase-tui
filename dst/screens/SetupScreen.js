@@ -6,7 +6,6 @@ import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
 */
 import { useState, useRef, useEffect } from "react";
 import { Box, Text, useInput } from "ink";
-import Spinner from "ink-spinner";
 import { DateTime } from "luxon";
 import { runCommand } from "./Screen.js";
 import OutputBox from "../components/OutputBox.js";
@@ -95,8 +94,6 @@ const SetupScreen = ({ escBlockedRef, onHint, screenWidth, screenHeight }) => {
     const actionsW = 20;
     const outputW = Math.max(1, screenWidth - actionsW);
     const outputH = Math.max(1, screenHeight - 1);
-    return (_jsxs(Box, { flexDirection: 'row', padding: 1, children: [_jsx(Box, { flexDirection: 'column', width: actionsW, children: running ?
-                    _jsxs(Box, { flexDirection: 'column', children: [_jsx(Text, { color: focus === "commands" ? "cyan" : "gray", children: "Commands" }), _jsxs(Text, { children: [_jsx(Spinner, { type: 'dots' }), " Running..."] })] }) :
-                    _jsx(SelectList, { items: actions, selectedIndex: selected, isFocused: focus === "commands", header: 'Commands' }) }), _jsxs(Box, { flexDirection: 'column', width: outputW, children: [_jsx(Text, { color: focus === "output" ? "cyan" : "gray", children: "Command output" }), _jsx(OutputBox, { lines: lines, active: focus === "output", maxVisible: outputH, contentWidth: outputW, borderColor: focus === "output" ? "cyan" : "gray" })] })] }));
+    return (_jsxs(Box, { flexDirection: 'row', padding: 1, children: [_jsx(Box, { flexDirection: 'column', width: actionsW, children: _jsx(SelectList, { items: actions, selectedIndex: selected, isFocused: focus === "commands", header: 'Commands', maxVisible: outputH + 1, busyIndex: running ? selected : undefined }) }), _jsxs(Box, { flexDirection: 'column', width: outputW, children: [_jsx(Text, { color: focus === "output" ? "cyan" : "gray", children: "Command output" }), _jsx(OutputBox, { lines: lines, active: focus === "output", maxVisible: outputH, contentWidth: outputW, borderColor: focus === "output" ? "cyan" : "gray" })] })] }));
 };
 export default SetupScreen;

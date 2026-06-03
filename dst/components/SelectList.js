@@ -5,7 +5,8 @@ import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
 **  Licensed under GPL 3.0 <https://spdx.org/licenses/GPL-3.0-only>
 */
 import { Box, Text } from "ink";
-const SelectList = ({ items, selectedIndex, isFocused = false, header, maxVisible }) => {
+import Spinner from "ink-spinner";
+const SelectList = ({ items, selectedIndex, isFocused = false, header, maxVisible, busyIndex }) => {
     /* number of item rows that fit: maxVisible (total) minus the optional header row */
     const rows = maxVisible !== undefined ?
         Math.max(1, maxVisible - (header !== undefined ? 1 : 0)) :
@@ -20,7 +21,9 @@ const SelectList = ({ items, selectedIndex, isFocused = false, header, maxVisibl
         0;
     const list = (_jsx(Box, { flexDirection: 'column', children: visible.map((item, i) => {
             const idx = offset + i;
-            return (_jsxs(Text, { color: idx === selectedIndex ? (isFocused ? "cyan" : "gray") : "white", children: [idx === selectedIndex ? _jsx(Text, { color: isFocused ? "cyan" : "gray", children: "\u276F " }) : "  ", item.label] }, item.value));
+            return (_jsxs(Text, { color: idx === selectedIndex ? (isFocused ? "cyan" : "gray") : "white", children: [idx === busyIndex ?
+                        _jsxs(Text, { color: isFocused ? "cyan" : "gray", children: [_jsx(Spinner, { type: 'dots' }), " "] }) :
+                        idx === selectedIndex ? _jsx(Text, { color: isFocused ? "cyan" : "gray", children: "\u276F " }) : "  ", item.label] }, item.value));
         }) }));
     return (_jsxs(Box, { flexDirection: 'column', children: [header !== undefined ?
                 _jsx(Text, { color: isFocused ? "cyan" : "gray", children: header }) : null, needBar ?

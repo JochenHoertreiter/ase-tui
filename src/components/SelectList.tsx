@@ -5,6 +5,7 @@
 */
 
 import { Box, Text }         from "ink"
+import Spinner                from "ink-spinner"
 import type { ActionItem }   from "../screens/Screen.js"
 
 type Props = {
@@ -13,9 +14,10 @@ type Props = {
     isFocused?:    boolean
     header?:       string
     maxVisible?:   number
+    busyIndex?:    number
 }
 
-const SelectList = ({ items, selectedIndex, isFocused = false, header, maxVisible }: Props) => {
+const SelectList = ({ items, selectedIndex, isFocused = false, header, maxVisible, busyIndex }: Props) => {
     /* number of item rows that fit: maxVisible (total) minus the optional header row */
     const rows = maxVisible !== undefined ?
         Math.max(1, maxVisible - (header !== undefined ? 1 : 0)) :
@@ -37,7 +39,9 @@ const SelectList = ({ items, selectedIndex, isFocused = false, header, maxVisibl
                 const idx = offset + i
                 return (
                     <Text key={item.value} color={idx === selectedIndex ? (isFocused ? "cyan" : "gray") : "white"}>
-                        {idx === selectedIndex ? <Text color={isFocused ? "cyan" : "gray"}>❯ </Text> : "  "}{item.label}
+                        {idx === busyIndex ?
+                            <Text color={isFocused ? "cyan" : "gray"}><Spinner type='dots' /> </Text> :
+                            idx === selectedIndex ? <Text color={isFocused ? "cyan" : "gray"}>❯ </Text> : "  "}{item.label}
                     </Text>
                 )
             })}

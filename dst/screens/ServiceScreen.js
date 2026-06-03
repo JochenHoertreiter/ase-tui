@@ -91,12 +91,12 @@ const ServiceScreen = ({ onHint, screenWidth, screenHeight }) => {
         else if (key.return)
             handleSelect(actions[selected]).catch(() => { });
     });
-    /* own elements: 1 status + 1 blank + 1 spinner/select + 1 padding = 4 */
+    /* layout: action list | output (1 status + 1 blank + 1 header + 1 padding = 4) */
+    const actionsW = 20;
+    const outputW = Math.max(1, screenWidth - actionsW);
     const outputH = Math.max(1, screenHeight - 4);
     return (_jsxs(Box, { flexDirection: 'column', padding: 1, children: [statusLoading ?
                 _jsxs(Text, { children: [_jsx(Spinner, { type: 'dots' }), " Loading status..."] }) :
-                _jsxs(Text, { children: ["Status: ", _jsx(Text, { color: 'green', children: status })] }), _jsx(Text, { children: " " }), running ?
-                _jsxs(Text, { children: [_jsx(Spinner, { type: 'dots' }), " Running..."] }) :
-                _jsx(SelectList, { items: actions, selectedIndex: selected, isFocused: true }), _jsx(OutputBox, { lines: lines, active: !running, maxVisible: outputH, contentWidth: screenWidth })] }));
+                _jsxs(Text, { children: ["Status: ", _jsx(Text, { color: 'green', children: status })] }), _jsx(Text, { children: " " }), _jsxs(Box, { flexDirection: 'row', children: [_jsx(Box, { flexDirection: 'column', width: actionsW, children: _jsx(SelectList, { items: actions, selectedIndex: selected, isFocused: true, header: 'Service', maxVisible: outputH + 1, busyIndex: running ? selected : undefined }) }), _jsxs(Box, { flexDirection: 'column', width: outputW, children: [_jsx(Text, { color: 'gray', children: "Service output" }), _jsx(OutputBox, { lines: lines, active: !running, maxVisible: outputH, contentWidth: outputW })] })] })] }));
 };
 export default ServiceScreen;
