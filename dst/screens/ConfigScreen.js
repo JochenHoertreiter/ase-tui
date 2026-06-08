@@ -9,6 +9,7 @@ import { Box, Text, useInput } from "ink";
 import Spinner from "ink-spinner";
 import { execa } from "execa";
 import stripAnsi from "strip-ansi";
+import cliTruncate from "cli-truncate";
 import OutputBox from "../components/OutputBox.js";
 import SelectList from "../components/SelectList.js";
 import { logError } from "../components/Logger.js";
@@ -35,21 +36,29 @@ const PRESET_ITEMS = [
     { label: "pro", value: "pro" },
     { label: "industry", value: "industry" }
 ];
+/*  derive each key's effective scope/value by priority project > user > default  */
 const buildRows = (userMap, projectMap) => {
     const keys = new Set([...userMap.keys(), ...projectMap.keys()]);
     const get = (map, scope, key) => {
         const e = map.get(key);
         return e?.scope === scope ? e.value : "";
     };
-    return [...keys].sort().map((key) => ({
-        key,
-        default: get(userMap, "default", key) || get(projectMap, "default", key),
-        user: get(userMap, "user", key),
-        project: get(projectMap, "project", key)
-    }));
+    return [...keys].sort().map((key) => {
+        const project = get(projectMap, "project", key);
+        const user = get(userMap, "user", key);
+        const dflt = get(userMap, "default", key) || get(projectMap, "default", key);
+        if (project)
+            return { key, scope: "Project", value: project };
+        if (user)
+            return { key, scope: "User", value: user };
+        return { key, scope: "default", value: dflt };
+    });
 };
-const COL_W = { key: 16, default: 12, user: 12, project: 12 };
 const pad = (s, w) => s.length >= w ? s.slice(0, w) : s + " ".repeat(w - s.length);
+/*  color each scope by its override rank: default (base) < User < Project (active override)  */
+const scopeColor = (scope) => scope === "Project" ? "green" :
+    scope === "User" ? "blue" :
+        "gray";
 const ConfigScreen = ({ escBlockedRef, onHint, screenWidth, screenHeight }) => {
     const [loading, setLoading] = useState(true);
     const [rows, setRows] = useState([]);
@@ -140,8 +149,7 @@ const ConfigScreen = ({ escBlockedRef, onHint, screenWidth, screenHeight }) => {
                 setSelectedRow((r) => Math.min(rows.length - 1, r + 1));
             else if (key.return && rows.length > 0) {
                 const row = rows[selectedRow];
-                const current = row.project || row.user || row.default;
-                setInputVal(current);
+                setInputVal(row.value);
                 setMode("edit");
             }
             else if (input === "i") {
@@ -177,17 +185,31 @@ const ConfigScreen = ({ escBlockedRef, onHint, screenWidth, screenHeight }) => {
                 const row = rows[selectedRow];
                 const k = row.key;
                 const v = inputVal.trim();
-                /*  optimistic state update — no reload flicker  */
-                setRows((prev) => prev.map((r, i) => i === selectedRow ? { ...r, project: v } : r));
                 setMode("view");
                 setInputVal("");
-                execa("ase", ["config", "--scope", "project", "set", k, v])
-                    .then(() => { setOutput([`Set ${k} = ${v}`]); })
-                    .catch((err) => {
-                    setOutput([`Error: ${err instanceof Error ? err.message : String(err)}`]);
-                    /*  revert optimistic update on failure  */
-                    reload().catch(() => { });
-                });
+                if (v === "") {
+                    /*  empty value deletes the project override; effective scope/value recomputed on reload  */
+                    execa("ase", ["config", "--scope", "project", "delete", k])
+                        .then(() => {
+                        setOutput([`Deleted ${k}`]);
+                        reload().catch(() => { });
+                    })
+                        .catch((err) => {
+                        setOutput([`Error: ${err instanceof Error ? err.message : String(err)}`]);
+                        reload().catch(() => { });
+                    });
+                }
+                else {
+                    /*  optimistic state update — no reload flicker  */
+                    setRows((prev) => prev.map((r, i) => i === selectedRow ? { ...r, scope: "Project", value: v } : r));
+                    execa("ase", ["config", "--scope", "project", "set", k, v])
+                        .then(() => { setOutput([`Set ${k} = ${v}`]); })
+                        .catch((err) => {
+                        setOutput([`Error: ${err instanceof Error ? err.message : String(err)}`]);
+                        /*  revert optimistic update on failure  */
+                        reload().catch(() => { });
+                    });
+                }
             }
             else if (key.backspace || key.delete)
                 setInputVal((v) => v.slice(0, -1));
@@ -206,8 +228,15 @@ const ConfigScreen = ({ escBlockedRef, onHint, screenWidth, screenHeight }) => {
             setOutput([`Error: ${err instanceof Error ? err.message : String(err)}`]);
         }
     };
-    const hdr = (_jsxs(Text, { children: [_jsxs(Text, { color: 'cyan', children: ["  ", pad("KEY", COL_W.key)] }), "  ", _jsx(Text, { color: 'cyan', children: pad("DEFAULT", COL_W.default) }), "  ", _jsx(Text, { color: 'cyan', children: pad("USER", COL_W.user) }), "  ", _jsx(Text, { color: 'cyan', children: pad("PROJECT", COL_W.project) })] }));
-    const sep = (_jsx(Text, { color: 'gray', children: "─".repeat(COL_W.key + COL_W.default + COL_W.user + COL_W.project + 8) }));
+    /* dynamic column widths: KEY/SCOPE fit longest cell, VALUE fits longest cell but clamped to screen width */
+    const colW = (header, cells) => cells.reduce((m, c) => Math.max(m, c.length), header.length);
+    const keyW = colW("KEY", rows.map((r) => r.key));
+    const scopeW = colW("SCOPE", rows.map((r) => r.scope));
+    /* 2 indicator + 2 inter-column gaps of 2 chars each = 6 chars of fixed chrome */
+    const valueAvail = Math.max(1, screenWidth - keyW - scopeW - 6);
+    const valueW = Math.min(colW("VALUE", rows.map((r) => r.value)), valueAvail);
+    const hdr = (_jsxs(Text, { children: [_jsxs(Text, { color: 'cyan', children: ["  ", pad("KEY", keyW)] }), "  ", _jsx(Text, { color: 'cyan', children: pad("SCOPE", scopeW) }), "  ", _jsx(Text, { color: 'cyan', children: pad("VALUE", valueW) })] }));
+    const sep = (_jsx(Text, { color: 'gray', children: "─".repeat(keyW + scopeW + valueW + 6) }));
     /* output pane height: screen minus table (hdr + sep + rows + blank), the output header and padding */
     const tableH = 2 + rows.length + 1;
     const presetH = mode === "preset" ? PRESET_ITEMS.length + 1 : 0;
@@ -220,10 +249,10 @@ const ConfigScreen = ({ escBlockedRef, onHint, screenWidth, screenHeight }) => {
                 _jsxs(Box, { flexDirection: 'column', children: [hdr, sep, rows.map((r, i) => {
                             const isSelected = i === selectedRow;
                             const indicator = isSelected ? _jsx(Text, { color: 'cyan', children: "\u25B6 " }) : _jsx(Text, { children: "  " });
-                            const projectCol = (mode === "edit" && isSelected) ?
-                                _jsxs(Text, { color: 'cyan', children: [pad(inputVal, COL_W.project), _jsx(Text, { color: 'cyan', children: "\u2588" })] }) :
-                                _jsx(Text, { color: 'gray', children: pad(r.project, COL_W.project) });
-                            return (_jsxs(Text, { children: [indicator, _jsx(Text, { color: 'white', children: pad(r.key, COL_W.key) }), "  ", _jsx(Text, { color: 'gray', children: pad(r.default, COL_W.default) }), "  ", _jsx(Text, { color: 'yellow', children: pad(r.user, COL_W.user) }), "  ", projectCol] }, r.key));
+                            const valueCol = (mode === "edit" && isSelected) ?
+                                _jsxs(Text, { color: 'cyan', children: [inputVal, _jsx(Text, { color: 'cyan', children: "\u2588" })] }) :
+                                _jsx(Text, { color: 'white', children: pad(cliTruncate(r.value, valueW), valueW) });
+                            return (_jsxs(Text, { children: [indicator, _jsx(Text, { color: 'white', children: pad(r.key, keyW) }), "  ", _jsx(Text, { color: scopeColor(r.scope), children: pad(r.scope, scopeW) }), "  ", valueCol] }, r.key));
                         }), _jsx(Text, { children: " " }), mode === "preset" ?
                             _jsx(Box, { flexDirection: 'column', children: _jsx(SelectList, { items: PRESET_ITEMS, selectedIndex: presetIdx, isFocused: true, header: 'Select preset:', maxVisible: PRESET_ITEMS.length + 1 }) }) :
                             null, _jsx(Text, { color: mode === "output" ? "cyan" : "gray", children: "Config output" }), _jsx(OutputBox, { lines: output, active: mode === "output", maxVisible: outputH, contentWidth: outputW, borderColor: mode === "output" ? "cyan" : "gray" })] }) }));

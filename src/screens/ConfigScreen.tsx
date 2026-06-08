@@ -10,6 +10,7 @@ import { Box, Text, useInput }              from "ink"
 import Spinner                              from "ink-spinner"
 import { execa }                            from "execa"
 import stripAnsi                            from "strip-ansi"
+import cliTruncate                          from "cli-truncate"
 import { type ActionItem }                  from "./Screen.js"
 import OutputBox                            from "../components/OutputBox.js"
 import SelectList                           from "../components/SelectList.js"
@@ -44,30 +45,38 @@ const PRESET_ITEMS: ActionItem[] = [
 type ScopeMap = Map<string, { value: string, scope: string }>
 
 type ConfigRow = {
-    key:     string
-    default: string
-    user:    string
-    project: string
+    key:   string
+    scope: string
+    value: string
 }
 
+/*  derive each key's effective scope/value by priority project > user > default  */
 const buildRows = (userMap: ScopeMap, projectMap: ScopeMap): ConfigRow[] => {
     const keys = new Set<string>([ ...userMap.keys(), ...projectMap.keys() ])
     const get = (map: ScopeMap, scope: string, key: string): string => {
         const e = map.get(key)
         return e?.scope === scope ? e.value : ""
     }
-    return [ ...keys ].sort().map((key) => ({
-        key,
-        default: get(userMap, "default", key) || get(projectMap, "default", key),
-        user:    get(userMap, "user",    key),
-        project: get(projectMap, "project", key)
-    }))
+    return [ ...keys ].sort().map((key) => {
+        const project = get(projectMap, "project", key)
+        const user    = get(userMap,    "user",    key)
+        const dflt     = get(userMap, "default", key) || get(projectMap, "default", key)
+        if (project)
+            return { key, scope: "Project", value: project }
+        if (user)
+            return { key, scope: "User", value: user }
+        return { key, scope: "default", value: dflt }
+    })
 }
-
-const COL_W = { key: 16, default: 12, user: 12, project: 12 }
 
 const pad = (s: string, w: number): string =>
     s.length >= w ? s.slice(0, w) : s + " ".repeat(w - s.length)
+
+/*  color each scope by its override rank: default (base) < User < Project (active override)  */
+const scopeColor = (scope: string): string =>
+    scope === "Project" ? "green" :
+        scope === "User"    ? "blue"  :
+            "gray"
 
 type ConfigMode = "view" | "edit" | "preset" | "output"
 
@@ -173,8 +182,7 @@ const ConfigScreen = ({ escBlockedRef, onHint, screenWidth, screenHeight }: Prop
                 setSelectedRow((r) => Math.min(rows.length - 1, r + 1))
             else if (key.return && rows.length > 0) {
                 const row = rows[selectedRow]
-                const current = row.project || row.user || row.default
-                setInputVal(current)
+                setInputVal(row.value)
                 setMode("edit")
             }
             else if (input === "i") {
@@ -210,19 +218,33 @@ const ConfigScreen = ({ escBlockedRef, onHint, screenWidth, screenHeight }: Prop
                 const row = rows[selectedRow]
                 const k   = row.key
                 const v   = inputVal.trim()
-                /*  optimistic state update — no reload flicker  */
-                setRows((prev) => prev.map((r, i) =>
-                    i === selectedRow ? { ...r, project: v } : r
-                ))
                 setMode("view")
                 setInputVal("")
-                execa("ase", [ "config", "--scope", "project", "set", k, v ])
-                    .then(() => { setOutput([ `Set ${k} = ${v}` ]) })
-                    .catch((err) => {
-                        setOutput([ `Error: ${err instanceof Error ? err.message : String(err)}` ])
-                        /*  revert optimistic update on failure  */
-                        reload().catch(() => {})
-                    })
+                if (v === "") {
+                    /*  empty value deletes the project override; effective scope/value recomputed on reload  */
+                    execa("ase", [ "config", "--scope", "project", "delete", k ])
+                        .then(() => {
+                            setOutput([ `Deleted ${k}` ])
+                            reload().catch(() => {})
+                        })
+                        .catch((err) => {
+                            setOutput([ `Error: ${err instanceof Error ? err.message : String(err)}` ])
+                            reload().catch(() => {})
+                        })
+                }
+                else {
+                    /*  optimistic state update — no reload flicker  */
+                    setRows((prev) => prev.map((r, i) =>
+                        i === selectedRow ? { ...r, scope: "Project", value: v } : r
+                    ))
+                    execa("ase", [ "config", "--scope", "project", "set", k, v ])
+                        .then(() => { setOutput([ `Set ${k} = ${v}` ]) })
+                        .catch((err) => {
+                            setOutput([ `Error: ${err instanceof Error ? err.message : String(err)}` ])
+                            /*  revert optimistic update on failure  */
+                            reload().catch(() => {})
+                        })
+                }
             }
             else if (key.backspace || key.delete)
                 setInputVal((v) => v.slice(0, -1))
@@ -243,20 +265,27 @@ const ConfigScreen = ({ escBlockedRef, onHint, screenWidth, screenHeight }: Prop
         }
     }
 
+    /* dynamic column widths: KEY/SCOPE fit longest cell, VALUE fits longest cell but clamped to screen width */
+    const colW = (header: string, cells: string[]): number =>
+        cells.reduce((m, c) => Math.max(m, c.length), header.length)
+    const keyW   = colW("KEY",   rows.map((r) => r.key))
+    const scopeW = colW("SCOPE", rows.map((r) => r.scope))
+    /* 2 indicator + 2 inter-column gaps of 2 chars each = 6 chars of fixed chrome */
+    const valueAvail = Math.max(1, screenWidth - keyW - scopeW - 6)
+    const valueW     = Math.min(colW("VALUE", rows.map((r) => r.value)), valueAvail)
+
     const hdr = (
         <Text>
-            <Text color='cyan'>{"  "}{pad("KEY",     COL_W.key    )}</Text>
+            <Text color='cyan'>{"  "}{pad("KEY",   keyW  )}</Text>
             {"  "}
-            <Text color='cyan'>{pad("DEFAULT", COL_W.default)}</Text>
+            <Text color='cyan'>{pad("SCOPE", scopeW)}</Text>
             {"  "}
-            <Text color='cyan'>{pad("USER",    COL_W.user   )}</Text>
-            {"  "}
-            <Text color='cyan'>{pad("PROJECT", COL_W.project)}</Text>
+            <Text color='cyan'>{pad("VALUE", valueW)}</Text>
         </Text>
     )
 
     const sep = (
-        <Text color='gray'>{"─".repeat(COL_W.key + COL_W.default + COL_W.user + COL_W.project + 8)}</Text>
+        <Text color='gray'>{"─".repeat(keyW + scopeW + valueW + 6)}</Text>
     )
 
     /* output pane height: screen minus table (hdr + sep + rows + blank), the output header and padding */
@@ -277,19 +306,17 @@ const ConfigScreen = ({ escBlockedRef, onHint, screenWidth, screenHeight }: Prop
                         {rows.map((r, i) => {
                             const isSelected = i === selectedRow
                             const indicator  = isSelected ? <Text color='cyan'>▶ </Text> : <Text>{"  "}</Text>
-                            const projectCol = (mode === "edit" && isSelected) ?
-                                <Text color='cyan'>{pad(inputVal, COL_W.project)}<Text color='cyan'>█</Text></Text> :
-                                <Text color='gray'>{pad(r.project, COL_W.project)}</Text>
+                            const valueCol = (mode === "edit" && isSelected) ?
+                                <Text color='cyan'>{inputVal}<Text color='cyan'>█</Text></Text> :
+                                <Text color='white'>{pad(cliTruncate(r.value, valueW), valueW)}</Text>
                             return (
                                 <Text key={r.key}>
                                     {indicator}
-                                    <Text color='white'>{pad(r.key,     COL_W.key    )}</Text>
+                                    <Text color='white'>{pad(r.key,   keyW  )}</Text>
                                     {"  "}
-                                    <Text color='gray'>{pad(r.default, COL_W.default)}</Text>
+                                    <Text color={scopeColor(r.scope)}>{pad(r.scope, scopeW)}</Text>
                                     {"  "}
-                                    <Text color='yellow'>{pad(r.user,    COL_W.user   )}</Text>
-                                    {"  "}
-                                    {projectCol}
+                                    {valueCol}
                                 </Text>
                             )
                         })}
