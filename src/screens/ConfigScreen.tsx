@@ -11,6 +11,7 @@ import Spinner                              from "ink-spinner"
 import { execa }                            from "execa"
 import stripAnsi                            from "strip-ansi"
 import { type ActionItem }                  from "./Screen.js"
+import OutputBox                            from "../components/OutputBox.js"
 import SelectList                           from "../components/SelectList.js"
 import { logError }                         from "../components/Logger.js"
 import type { HintSegment }                 from "../components/HintBar.js"
@@ -68,7 +69,7 @@ const COL_W = { key: 16, default: 12, user: 12, project: 12 }
 const pad = (s: string, w: number): string =>
     s.length >= w ? s.slice(0, w) : s + " ".repeat(w - s.length)
 
-type ConfigMode = "view" | "edit" | "preset"
+type ConfigMode = "view" | "edit" | "preset" | "output"
 
 type Props = {
     escBlockedRef: RefObject<boolean>
@@ -77,7 +78,7 @@ type Props = {
     screenHeight:  number
 }
 
-const ConfigScreen = ({ escBlockedRef, onHint, screenWidth: _screenWidth, screenHeight: _screenHeight }: Props) => {
+const ConfigScreen = ({ escBlockedRef, onHint, screenWidth, screenHeight }: Props) => {
     const [ loading,     setLoading     ] = useState(true)
     const [ rows,        setRows        ] = useState<ConfigRow[]>([])
     const [ error,       setError       ] = useState("")
@@ -85,7 +86,7 @@ const ConfigScreen = ({ escBlockedRef, onHint, screenWidth: _screenWidth, screen
     const [ selectedRow, setSelectedRow ] = useState(0)
     const [ presetIdx,   setPresetIdx   ] = useState(0)
     const [ inputVal,    setInputVal    ] = useState("")
-    const [ output,      setOutput      ] = useState<string | null>(null)
+    const [ output,      setOutput      ] = useState<string[]>([])
 
     const reload = useCallback(async () => {
         setLoading(true)
@@ -150,11 +151,17 @@ const ConfigScreen = ({ escBlockedRef, onHint, screenWidth: _screenWidth, screen
                 { key: "⏎",   desc: "select preset"    },
                 { key: "ESC", desc: "back"             }
             ])
+        else if (mode === "output")
+            onHint([
+                { key: "↑ ↓ / PgUp/PgDn", desc: "scroll output" },
+                { key: "ESC",             desc: "back"          }
+            ])
         else
             onHint([
                 { key: "↑ ↓", desc: "navigate keys" },
                 { key: "⏎",   desc: "edit value"    },
-                { key: "i",   desc: "init preset"   }
+                { key: "i",   desc: "init preset"   },
+                { key: "o",   desc: "output"        }
             ])
     }, [ mode, onHint ])
 
@@ -174,6 +181,13 @@ const ConfigScreen = ({ escBlockedRef, onHint, screenWidth: _screenWidth, screen
                 setPresetIdx(0)
                 setMode("preset")
             }
+            else if (input === "o")
+                setMode("output")
+        }
+        else if (mode === "output") {
+            if (key.escape)
+                setMode("view")
+            /*  ↑↓ and pageUp/pageDown are handled by OutputBox internally  */
         }
         else if (mode === "preset") {
             if (key.escape)
@@ -203,9 +217,9 @@ const ConfigScreen = ({ escBlockedRef, onHint, screenWidth: _screenWidth, screen
                 setMode("view")
                 setInputVal("")
                 execa("ase", [ "config", "--scope", "project", "set", k, v ])
-                    .then(() => { setOutput(`Set ${k} = ${v}`) })
+                    .then(() => { setOutput([ `Set ${k} = ${v}` ]) })
                     .catch((err) => {
-                        setOutput(`Error: ${err instanceof Error ? err.message : String(err)}`)
+                        setOutput([ `Error: ${err instanceof Error ? err.message : String(err)}` ])
                         /*  revert optimistic update on failure  */
                         reload().catch(() => {})
                     })
@@ -221,11 +235,11 @@ const ConfigScreen = ({ escBlockedRef, onHint, screenWidth: _screenWidth, screen
         setMode("view")
         try {
             await execa("ase", [ "config", "--scope", "project", "init", item.value ])
-            setOutput(`Applied preset: ${item.value}`)
+            setOutput([ `Applied preset: ${item.value}` ])
             reload().catch(() => {})
         }
         catch (err) {
-            setOutput(`Error: ${err instanceof Error ? err.message : String(err)}`)
+            setOutput([ `Error: ${err instanceof Error ? err.message : String(err)}` ])
         }
     }
 
@@ -244,6 +258,12 @@ const ConfigScreen = ({ escBlockedRef, onHint, screenWidth: _screenWidth, screen
     const sep = (
         <Text color='gray'>{"─".repeat(COL_W.key + COL_W.default + COL_W.user + COL_W.project + 8)}</Text>
     )
+
+    /* output pane height: screen minus table (hdr + sep + rows + blank), the output header and padding */
+    const tableH  = 2 + rows.length + 1
+    const presetH = mode === "preset" ? PRESET_ITEMS.length + 1 : 0
+    const outputW = Math.max(1, screenWidth  - 2)
+    const outputH = Math.max(1, screenHeight - tableH - presetH - 2)
 
     return (
         <Box flexDirection='column' padding={1}>
@@ -276,10 +296,17 @@ const ConfigScreen = ({ escBlockedRef, onHint, screenWidth: _screenWidth, screen
                         <Text> </Text>
                         {mode === "preset" ?
                             <Box flexDirection='column'>
-                                <SelectList items={PRESET_ITEMS} selectedIndex={presetIdx} isFocused header='Select preset:' />
+                                <SelectList items={PRESET_ITEMS} selectedIndex={presetIdx} isFocused header='Select preset:' maxVisible={PRESET_ITEMS.length + 1} />
                             </Box> :
                             null}
-                        {output !== null && <Text color='yellow'>{output}</Text>}
+                        <Text color={mode === "output" ? "cyan" : "gray"}>Config output</Text>
+                        <OutputBox
+                            lines={output}
+                            active={mode === "output"}
+                            maxVisible={outputH}
+                            contentWidth={outputW}
+                            borderColor={mode === "output" ? "cyan" : "gray"}
+                        />
                     </Box>}
         </Box>
     )

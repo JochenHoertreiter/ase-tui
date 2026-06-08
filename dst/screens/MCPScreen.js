@@ -82,6 +82,12 @@ const MCPScreen = ({ escBlockedRef, onHint, screenWidth, screenHeight }) => {
             onHint([
                 { key: "↑ ↓", desc: "navigate actions" },
                 { key: "⏎", desc: "execute action" },
+                { key: "o", desc: "output" },
+                { key: "ESC", desc: "back" }
+            ]);
+        else
+            onHint([
+                { key: "↑ ↓ / PgUp/PgDn", desc: "scroll output" },
                 { key: "ESC", desc: "back" }
             ]);
     }, [focus, onHint]);
@@ -115,7 +121,7 @@ const MCPScreen = ({ escBlockedRef, onHint, screenWidth, screenHeight }) => {
             setRunning(false);
         }
     };
-    useInput((_input, key) => {
+    useInput((input, key) => {
         if (runningRef.current)
             return;
         if (focus === "servers") {
@@ -133,10 +139,19 @@ const MCPScreen = ({ escBlockedRef, onHint, screenWidth, screenHeight }) => {
                 setSelectedAction((i) => Math.min(ACTIONS.length - 1, i + 1));
             else if (key.escape)
                 setFocus("servers");
-            else if (key.return)
+            else if (key.return) {
+                setFocus("output");
                 handleActionSelect(ACTIONS[selectedAction]).catch((e) => {
                     logError("MCPScreen", "unexpected", e);
                 });
+            }
+            else if (input === "o")
+                setFocus("output");
+        }
+        else if (focus === "output") {
+            if (key.escape)
+                setFocus("actions");
+            /*  ↑↓ and pageUp/pageDown are handled by OutputBox internally  */
         }
     });
     /* layout: server list | action list | output */
@@ -149,6 +164,6 @@ const MCPScreen = ({ escBlockedRef, onHint, screenWidth, screenHeight }) => {
     const outputH = Math.max(1, screenHeight - 2);
     return (_jsx(Box, { flexDirection: 'column', padding: 1, children: loading ?
             _jsxs(Text, { children: [_jsx(Spinner, { type: 'dots' }), " Loading MCP servers..."] }) :
-            _jsxs(Box, { flexDirection: 'row', children: [_jsx(Box, { flexDirection: 'column', width: serversW, children: _jsx(SelectList, { items: serverItems, selectedIndex: selected, isFocused: focus === "servers", header: 'MCP Servers', maxVisible: outputH }) }), _jsx(Box, { flexDirection: 'column', width: actionsW, children: _jsx(SelectList, { items: ACTIONS, selectedIndex: selectedAction, isFocused: focus === "actions", header: 'Action', maxVisible: outputH, busyIndex: running ? selectedAction : undefined }) }), _jsx(OutputBox, { lines: lines, active: !running, maxVisible: outputH, contentWidth: outputW })] }) }));
+            _jsxs(Box, { flexDirection: 'row', children: [_jsx(Box, { flexDirection: 'column', width: serversW, children: _jsx(SelectList, { items: serverItems, selectedIndex: selected, isFocused: focus === "servers", header: 'MCP Servers', maxVisible: outputH + 1 }) }), _jsx(Box, { flexDirection: 'column', width: actionsW, children: _jsx(SelectList, { items: ACTIONS, selectedIndex: selectedAction, isFocused: focus === "actions", header: 'Action', maxVisible: outputH + 1, busyIndex: running ? selectedAction : undefined }) }), _jsxs(Box, { flexDirection: 'column', width: outputW, children: [_jsx(Text, { color: focus === "output" ? "cyan" : "gray", children: "MCP output" }), _jsx(OutputBox, { lines: lines, active: focus === "output", maxVisible: outputH, contentWidth: outputW, borderColor: focus === "output" ? "cyan" : "gray" })] })] }) }));
 };
 export default MCPScreen;

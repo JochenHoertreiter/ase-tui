@@ -21,6 +21,8 @@ const actions: ActionItem[] = [
     { label: "Stop service",   value: "stop"   }
 ]
 
+type Focus = "actions" | "output"
+
 type Props = {
     escBlockedRef: RefObject<boolean>
     onHint:        (hint: HintSegment[] | null) => void
@@ -28,11 +30,12 @@ type Props = {
     screenHeight:  number
 }
 
-const ServiceScreen = ({ onHint, screenWidth, screenHeight }: Props) => {
+const ServiceScreen = ({ escBlockedRef, onHint, screenWidth, screenHeight }: Props) => {
     const [ statusLoading, setStatusLoading ] = useState(true)
     const [ status,        setStatus        ] = useState("")
     const [ running,       setRunning       ] = useState(false)
     const [ selected,      setSelected      ] = useState(0)
+    const [ focus,         setFocus         ] = useState<Focus>("actions")
     const [ lines,         setLines         ] = useState<string[]>([])
     const runningRef = useRef(false)
 
@@ -55,13 +58,26 @@ const ServiceScreen = ({ onHint, screenWidth, screenHeight }: Props) => {
         return () => { cancelled = true }
     }, [])
 
-    /*  delegate hint text to the master hint bar  */
+    /*  sync escBlockedRef so App's global ESC handler knows when to block  */
     useEffect(() => {
-        onHint([
-            { key: "↑ ↓", desc: "navigate actions" },
-            { key: "⏎",   desc: "execute action"   }
-        ])
-    }, [ onHint ])
+        escBlockedRef.current = focus !== "actions"
+        return () => { escBlockedRef.current = false }
+    }, [ focus, escBlockedRef ])
+
+    /*  delegate focus-dependent hint text to the master hint bar  */
+    useEffect(() => {
+        if (focus === "actions")
+            onHint([
+                { key: "↑ ↓", desc: "navigate actions" },
+                { key: "⏎",   desc: "execute action"   },
+                { key: "o",   desc: "output"           }
+            ])
+        else
+            onHint([
+                { key: "↑ ↓ / PgUp/PgDn", desc: "scroll output" },
+                { key: "ESC",             desc: "back"          }
+            ])
+    }, [ focus, onHint ])
 
     const handleSelect = async (item: ActionItem) => {
         if (runningRef.current)
@@ -96,15 +112,28 @@ const ServiceScreen = ({ onHint, screenWidth, screenHeight }: Props) => {
         }
     }
 
-    useInput((_input, key) => {
+    useInput((input, key) => {
         if (runningRef.current)
             return
-        if (key.upArrow)
-            setSelected((s) => Math.max(0, s - 1))
-        else if (key.downArrow)
-            setSelected((s) => Math.min(actions.length - 1, s + 1))
-        else if (key.return)
-            handleSelect(actions[selected]).catch(() => {})
+        /*  focus: actions  */
+        if (focus === "actions") {
+            if (key.upArrow)
+                setSelected((s) => Math.max(0, s - 1))
+            else if (key.downArrow)
+                setSelected((s) => Math.min(actions.length - 1, s + 1))
+            else if (key.return) {
+                setFocus("output")
+                handleSelect(actions[selected]).catch(() => {})
+            }
+            else if (input === "o")
+                setFocus("output")
+        }
+        /*  focus: output  */
+        if (focus === "output") {
+            if (key.escape)
+                setFocus("actions")
+            /*  ↑↓ and pageUp/pageDown are handled by OutputBox internally  */
+        }
     })
 
     /* layout: action list | output (1 status + 1 blank + 1 header + 1 padding = 4) */
@@ -120,11 +149,17 @@ const ServiceScreen = ({ onHint, screenWidth, screenHeight }: Props) => {
             <Text> </Text>
             <Box flexDirection='row'>
                 <Box flexDirection='column' width={actionsW}>
-                    <SelectList items={actions} selectedIndex={selected} isFocused header='Service' maxVisible={outputH + 1} busyIndex={running ? selected : undefined} />
+                    <SelectList items={actions} selectedIndex={selected} isFocused={focus === "actions"} header='Service' maxVisible={outputH + 1} busyIndex={running ? selected : undefined} />
                 </Box>
                 <Box flexDirection='column' width={outputW}>
-                    <Text color='gray'>Service output</Text>
-                    <OutputBox lines={lines} active={!running} maxVisible={outputH} contentWidth={outputW} />
+                    <Text color={focus === "output" ? "cyan" : "gray"}>Service output</Text>
+                    <OutputBox
+                        lines={lines}
+                        active={focus === "output"}
+                        maxVisible={outputH}
+                        contentWidth={outputW}
+                        borderColor={focus === "output" ? "cyan" : "gray"}
+                    />
                 </Box>
             </Box>
         </Box>

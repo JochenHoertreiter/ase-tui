@@ -9,6 +9,7 @@ import { Box, Text, useInput } from "ink";
 import Spinner from "ink-spinner";
 import { execa } from "execa";
 import stripAnsi from "strip-ansi";
+import OutputBox from "../components/OutputBox.js";
 import SelectList from "../components/SelectList.js";
 import { logError } from "../components/Logger.js";
 /*  parse "ase config list" table output into a map of key -> { value, scope }  */
@@ -49,7 +50,7 @@ const buildRows = (userMap, projectMap) => {
 };
 const COL_W = { key: 16, default: 12, user: 12, project: 12 };
 const pad = (s, w) => s.length >= w ? s.slice(0, w) : s + " ".repeat(w - s.length);
-const ConfigScreen = ({ escBlockedRef, onHint, screenWidth: _screenWidth, screenHeight: _screenHeight }) => {
+const ConfigScreen = ({ escBlockedRef, onHint, screenWidth, screenHeight }) => {
     const [loading, setLoading] = useState(true);
     const [rows, setRows] = useState([]);
     const [error, setError] = useState("");
@@ -57,7 +58,7 @@ const ConfigScreen = ({ escBlockedRef, onHint, screenWidth: _screenWidth, screen
     const [selectedRow, setSelectedRow] = useState(0);
     const [presetIdx, setPresetIdx] = useState(0);
     const [inputVal, setInputVal] = useState("");
-    const [output, setOutput] = useState(null);
+    const [output, setOutput] = useState([]);
     const reload = useCallback(async () => {
         setLoading(true);
         setError("");
@@ -118,11 +119,17 @@ const ConfigScreen = ({ escBlockedRef, onHint, screenWidth: _screenWidth, screen
                 { key: "⏎", desc: "select preset" },
                 { key: "ESC", desc: "back" }
             ]);
+        else if (mode === "output")
+            onHint([
+                { key: "↑ ↓ / PgUp/PgDn", desc: "scroll output" },
+                { key: "ESC", desc: "back" }
+            ]);
         else
             onHint([
                 { key: "↑ ↓", desc: "navigate keys" },
                 { key: "⏎", desc: "edit value" },
-                { key: "i", desc: "init preset" }
+                { key: "i", desc: "init preset" },
+                { key: "o", desc: "output" }
             ]);
     }, [mode, onHint]);
     useInput((input, key) => {
@@ -141,6 +148,13 @@ const ConfigScreen = ({ escBlockedRef, onHint, screenWidth: _screenWidth, screen
                 setPresetIdx(0);
                 setMode("preset");
             }
+            else if (input === "o")
+                setMode("output");
+        }
+        else if (mode === "output") {
+            if (key.escape)
+                setMode("view");
+            /*  ↑↓ and pageUp/pageDown are handled by OutputBox internally  */
         }
         else if (mode === "preset") {
             if (key.escape)
@@ -168,9 +182,9 @@ const ConfigScreen = ({ escBlockedRef, onHint, screenWidth: _screenWidth, screen
                 setMode("view");
                 setInputVal("");
                 execa("ase", ["config", "--scope", "project", "set", k, v])
-                    .then(() => { setOutput(`Set ${k} = ${v}`); })
+                    .then(() => { setOutput([`Set ${k} = ${v}`]); })
                     .catch((err) => {
-                    setOutput(`Error: ${err instanceof Error ? err.message : String(err)}`);
+                    setOutput([`Error: ${err instanceof Error ? err.message : String(err)}`]);
                     /*  revert optimistic update on failure  */
                     reload().catch(() => { });
                 });
@@ -185,15 +199,20 @@ const ConfigScreen = ({ escBlockedRef, onHint, screenWidth: _screenWidth, screen
         setMode("view");
         try {
             await execa("ase", ["config", "--scope", "project", "init", item.value]);
-            setOutput(`Applied preset: ${item.value}`);
+            setOutput([`Applied preset: ${item.value}`]);
             reload().catch(() => { });
         }
         catch (err) {
-            setOutput(`Error: ${err instanceof Error ? err.message : String(err)}`);
+            setOutput([`Error: ${err instanceof Error ? err.message : String(err)}`]);
         }
     };
     const hdr = (_jsxs(Text, { children: [_jsxs(Text, { color: 'cyan', children: ["  ", pad("KEY", COL_W.key)] }), "  ", _jsx(Text, { color: 'cyan', children: pad("DEFAULT", COL_W.default) }), "  ", _jsx(Text, { color: 'cyan', children: pad("USER", COL_W.user) }), "  ", _jsx(Text, { color: 'cyan', children: pad("PROJECT", COL_W.project) })] }));
     const sep = (_jsx(Text, { color: 'gray', children: "─".repeat(COL_W.key + COL_W.default + COL_W.user + COL_W.project + 8) }));
+    /* output pane height: screen minus table (hdr + sep + rows + blank), the output header and padding */
+    const tableH = 2 + rows.length + 1;
+    const presetH = mode === "preset" ? PRESET_ITEMS.length + 1 : 0;
+    const outputW = Math.max(1, screenWidth - 2);
+    const outputH = Math.max(1, screenHeight - tableH - presetH - 2);
     return (_jsx(Box, { flexDirection: 'column', padding: 1, children: loading ?
             _jsxs(Text, { children: [_jsx(Spinner, { type: 'dots' }), " Loading..."] }) :
             error ?
@@ -206,7 +225,7 @@ const ConfigScreen = ({ escBlockedRef, onHint, screenWidth: _screenWidth, screen
                                 _jsx(Text, { color: 'gray', children: pad(r.project, COL_W.project) });
                             return (_jsxs(Text, { children: [indicator, _jsx(Text, { color: 'white', children: pad(r.key, COL_W.key) }), "  ", _jsx(Text, { color: 'gray', children: pad(r.default, COL_W.default) }), "  ", _jsx(Text, { color: 'yellow', children: pad(r.user, COL_W.user) }), "  ", projectCol] }, r.key));
                         }), _jsx(Text, { children: " " }), mode === "preset" ?
-                            _jsx(Box, { flexDirection: 'column', children: _jsx(SelectList, { items: PRESET_ITEMS, selectedIndex: presetIdx, isFocused: true, header: 'Select preset:' }) }) :
-                            null, output !== null && _jsx(Text, { color: 'yellow', children: output })] }) }));
+                            _jsx(Box, { flexDirection: 'column', children: _jsx(SelectList, { items: PRESET_ITEMS, selectedIndex: presetIdx, isFocused: true, header: 'Select preset:', maxVisible: PRESET_ITEMS.length + 1 }) }) :
+                            null, _jsx(Text, { color: mode === "output" ? "cyan" : "gray", children: "Config output" }), _jsx(OutputBox, { lines: output, active: mode === "output", maxVisible: outputH, contentWidth: outputW, borderColor: mode === "output" ? "cyan" : "gray" })] }) }));
 };
 export default ConfigScreen;

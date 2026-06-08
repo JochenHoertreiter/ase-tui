@@ -45,7 +45,7 @@ const ACTIONS: ActionItem[] = [
     { label: "Deactivate", value: "deactivate" }
 ]
 
-type Focus = "servers" | "actions"
+type Focus = "servers" | "actions" | "output"
 
 type Props = {
     escBlockedRef: RefObject<boolean>
@@ -102,7 +102,13 @@ const MCPScreen = ({ escBlockedRef, onHint, screenWidth, screenHeight }: Props) 
             onHint([
                 { key: "↑ ↓", desc: "navigate actions" },
                 { key: "⏎",   desc: "execute action"   },
+                { key: "o",   desc: "output"           },
                 { key: "ESC", desc: "back"             }
+            ])
+        else
+            onHint([
+                { key: "↑ ↓ / PgUp/PgDn", desc: "scroll output" },
+                { key: "ESC",             desc: "back"          }
             ])
     }, [ focus, onHint ])
 
@@ -138,7 +144,7 @@ const MCPScreen = ({ escBlockedRef, onHint, screenWidth, screenHeight }: Props) 
         }
     }
 
-    useInput((_input, key) => {
+    useInput((input, key) => {
         if (runningRef.current)
             return
         if (focus === "servers") {
@@ -156,10 +162,19 @@ const MCPScreen = ({ escBlockedRef, onHint, screenWidth, screenHeight }: Props) 
                 setSelectedAction((i) => Math.min(ACTIONS.length - 1, i + 1))
             else if (key.escape)
                 setFocus("servers")
-            else if (key.return)
+            else if (key.return) {
+                setFocus("output")
                 handleActionSelect(ACTIONS[selectedAction]).catch((e) => {
                     logError("MCPScreen", "unexpected", e)
                 })
+            }
+            else if (input === "o")
+                setFocus("output")
+        }
+        else if (focus === "output") {
+            if (key.escape)
+                setFocus("actions")
+            /*  ↑↓ and pageUp/pageDown are handled by OutputBox internally  */
         }
     })
 
@@ -178,12 +193,21 @@ const MCPScreen = ({ escBlockedRef, onHint, screenWidth, screenHeight }: Props) 
                 <Text><Spinner type='dots' /> Loading MCP servers...</Text> :
                 <Box flexDirection='row'>
                     <Box flexDirection='column' width={serversW}>
-                        <SelectList items={serverItems} selectedIndex={selected} isFocused={focus === "servers"} header='MCP Servers' maxVisible={outputH} />
+                        <SelectList items={serverItems} selectedIndex={selected} isFocused={focus === "servers"} header='MCP Servers' maxVisible={outputH + 1} />
                     </Box>
                     <Box flexDirection='column' width={actionsW}>
-                        <SelectList items={ACTIONS} selectedIndex={selectedAction} isFocused={focus === "actions"} header='Action' maxVisible={outputH} busyIndex={running ? selectedAction : undefined} />
+                        <SelectList items={ACTIONS} selectedIndex={selectedAction} isFocused={focus === "actions"} header='Action' maxVisible={outputH + 1} busyIndex={running ? selectedAction : undefined} />
                     </Box>
-                    <OutputBox lines={lines} active={!running} maxVisible={outputH} contentWidth={outputW} />
+                    <Box flexDirection='column' width={outputW}>
+                        <Text color={focus === "output" ? "cyan" : "gray"}>MCP output</Text>
+                        <OutputBox
+                            lines={lines}
+                            active={focus === "output"}
+                            maxVisible={outputH}
+                            contentWidth={outputW}
+                            borderColor={focus === "output" ? "cyan" : "gray"}
+                        />
+                    </Box>
                 </Box>}
         </Box>
     )

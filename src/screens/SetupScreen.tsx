@@ -91,7 +91,7 @@ const SetupScreen = ({ escBlockedRef, onHint, screenWidth, screenHeight }: Props
         /*  focus: commands  */
         if (focus === "commands") {
             if (key.upArrow)
-                setSelected((s) => Math.max(0, s - 1))
+                setSelected( (s) => Math.max(0, s - 1))
             else if (key.downArrow)
                 setSelected((s) => Math.min(actions.length - 1, s + 1))
             else if (key.return && actions.length > 0) {
