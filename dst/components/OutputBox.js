@@ -8,6 +8,29 @@ import { useEffect, useState, useMemo } from "react";
 import { Box, Text, useInput } from "ink";
 import wrapAnsi from "wrap-ansi";
 import { logDebug } from "./Logger.js";
+/* classify one raw line into git-diff coloring props and track the surrounding
+   ```text fence state; coloring is active only inside such a fence, and the
+   fence marker lines themselves stay uncolored */
+const classifyDiffLine = (line, inDiff) => {
+    const trimmed = line.trimStart();
+    /* toggle fence state on ``` markers; the marker line itself is not colored */
+    if (trimmed.startsWith("```")) {
+        const opening = /^```+\s*text\b/.test(trimmed);
+        return { props: {}, inDiff: inDiff ? false : opening };
+    }
+    if (!inDiff)
+        return { props: {}, inDiff };
+    /* file headers take precedence over the +/- add/remove rules */
+    if (line.startsWith("diff --git") || line.startsWith("+++ ") || line.startsWith("--- "))
+        return { props: { color: "yellow", bold: true }, inDiff };
+    else if (line.startsWith("@@"))
+        return { props: { color: "cyan" }, inDiff };
+    else if (line.startsWith("+"))
+        return { props: { color: "green" }, inDiff };
+    else if (line.startsWith("-"))
+        return { props: { color: "red" }, inDiff };
+    return { props: {}, inDiff };
+};
 const OutputBox = ({ lines, active, maxVisible, contentWidth, borderColor = "cyan" }) => {
     const [offset, setOffset] = useState(0);
     /* number column width derived from the highest source line number */
@@ -18,9 +41,12 @@ const OutputBox = ({ lines, active, maxVisible, contentWidth, borderColor = "cya
        and whether a wrapped segment is a continuation (so it gets no own line number) */
     const wrapped = useMemo(() => {
         const result = [];
+        let inDiff = false;
         lines.forEach((line, idx) => {
+            const cls = classifyDiffLine(line, inDiff);
+            inDiff = cls.inDiff;
             const segs = wrapAnsi(line, innerW, { hard: true, trim: false, wordWrap: false }).split("\n");
-            segs.forEach((seg, si) => result.push({ text: seg, num: idx + 1, cont: si > 0 }));
+            segs.forEach((seg, si) => result.push({ text: seg, num: idx + 1, cont: si > 0, props: cls.props }));
         });
         return result;
     }, [lines, innerW]);
@@ -56,7 +82,7 @@ const OutputBox = ({ lines, active, maxVisible, contentWidth, borderColor = "cya
         Math.min(barHeight - 1, Math.round((offset / maxOffset) * (barHeight - 1))) :
         0;
     logDebug("OutputBox", "render", { lines: lines.length, contentWidth, innerW, innerH, total, maxVisible, needBar, offset, maxOffset, thumbPos, barHeight });
-    return (_jsxs(Box, { flexDirection: 'row', borderStyle: 'round', borderColor: borderColor, width: contentWidth, height: maxVisible, children: [_jsx(Box, { flexDirection: 'column', flexGrow: 1, paddingLeft: 1, children: visible.map((line, i) => _jsxs(Box, { flexDirection: 'row', children: [_jsx(Box, { width: numW + 1, flexShrink: 0, children: _jsx(Text, { dimColor: true, children: line.cont ? "" : String(line.num).padStart(numW) }) }), _jsx(Text, { children: line.text })] }, i)) }), needBar ?
+    return (_jsxs(Box, { flexDirection: 'row', borderStyle: 'round', borderColor: borderColor, width: contentWidth, height: maxVisible, children: [_jsx(Box, { flexDirection: 'column', flexGrow: 1, paddingLeft: 1, children: visible.map((line, i) => _jsxs(Box, { flexDirection: 'row', children: [_jsx(Box, { width: numW + 1, flexShrink: 0, children: _jsx(Text, { dimColor: true, children: line.cont ? "" : String(line.num).padStart(numW) }) }), _jsx(Text, { ...line.props, children: line.text })] }, i)) }), needBar ?
                 _jsx(Box, { flexDirection: 'column', width: 1, flexShrink: 0, children: [...Array(barHeight).keys()].map((i) => _jsx(Text, { color: active ? "cyan" : "gray", children: i === thumbPos ? "█" : "│" }, i)) }) :
                 null] }));
 };

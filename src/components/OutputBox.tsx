@@ -17,6 +17,35 @@ type Props = {
     borderColor?: string
 }
 
+/* Ink text props applied to a single rendered content line */
+type LineProps = { color?: string, bold?: boolean }
+
+/* classify one raw line into git-diff coloring props and track the surrounding
+   ```text fence state; coloring is active only inside such a fence, and the
+   fence marker lines themselves stay uncolored */
+const classifyDiffLine = (line: string, inDiff: boolean): { props: LineProps, inDiff: boolean } => {
+    const trimmed = line.trimStart()
+
+    /* toggle fence state on ``` markers; the marker line itself is not colored */
+    if (trimmed.startsWith("```")) {
+        const opening = /^```+\s*text\b/.test(trimmed)
+        return { props: {}, inDiff: inDiff ? false : opening }
+    }
+    if (!inDiff)
+        return { props: {}, inDiff }
+
+    /* file headers take precedence over the +/- add/remove rules */
+    if (line.startsWith("diff --git") || line.startsWith("+++ ") || line.startsWith("--- "))
+        return { props: { color: "yellow", bold: true }, inDiff }
+    else if (line.startsWith("@@"))
+        return { props: { color: "cyan" }, inDiff }
+    else if (line.startsWith("+"))
+        return { props: { color: "green" }, inDiff }
+    else if (line.startsWith("-"))
+        return { props: { color: "red" }, inDiff }
+    return { props: {}, inDiff }
+}
+
 const OutputBox = ({ lines, active, maxVisible, contentWidth, borderColor = "cyan" }: Props) => {
     const [ offset, setOffset ] = useState(0)
 
@@ -29,11 +58,14 @@ const OutputBox = ({ lines, active, maxVisible, contentWidth, borderColor = "cya
     /* wrap each raw line to innerW, preserving ANSI codes; remember source line number,
        and whether a wrapped segment is a continuation (so it gets no own line number) */
     const wrapped = useMemo(() => {
-        const result: { text: string, num: number, cont: boolean }[] = []
+        const result: { text: string, num: number, cont: boolean, props: LineProps }[] = []
+        let inDiff = false
         lines.forEach((line, idx) => {
+            const cls  = classifyDiffLine(line, inDiff)
+            inDiff     = cls.inDiff
             const segs = wrapAnsi(line, innerW, { hard: true, trim: false, wordWrap: false }).split("\n")
             segs.forEach((seg, si) =>
-                result.push({ text: seg, num: idx + 1, cont: si > 0 }))
+                result.push({ text: seg, num: idx + 1, cont: si > 0, props: cls.props }))
         })
         return result
     }, [ lines, innerW ])
@@ -86,7 +118,7 @@ const OutputBox = ({ lines, active, maxVisible, contentWidth, borderColor = "cya
                         <Box width={numW + 1} flexShrink={0}>
                             <Text dimColor>{line.cont ? "" : String(line.num).padStart(numW)}</Text>
                         </Box>
-                        <Text>{line.text}</Text>
+                        <Text {...line.props}>{line.text}</Text>
                     </Box>
                 )}
             </Box>
