@@ -94,6 +94,7 @@ const TaskScreen = ({ escBlockedRef, quitBlockedRef, onHint, screenWidth, screen
         else if (focus === "preview")
             onHint([
                 { key: "↑ ↓ / PgUp/PgDn", desc: "scroll preview" },
+                { key: "p", desc: "preview" },
                 { key: "ESC", desc: "back" }
             ]);
     }, [focus, onHint]);
@@ -110,7 +111,8 @@ const TaskScreen = ({ escBlockedRef, quitBlockedRef, onHint, screenWidth, screen
         setPreview([]);
         setShowOutput(false);
         setPreviewLoading(true);
-        prevFocus.current = focus;
+        if (focus !== "preview")
+            prevFocus.current = focus;
         setFocus("preview");
         try {
             const res = await execa("ase", ["task", "load", id]);
@@ -274,6 +276,8 @@ const TaskScreen = ({ escBlockedRef, quitBlockedRef, onHint, screenWidth, screen
                 setPreview([]);
                 setFocus(prevFocus.current);
             }
+            else if (input === "p" && tasks.length > 0)
+                loadPreview().catch((e) => { logError("TaskScreen", "unexpected", e); });
             /*  ↑↓ and pageUp/pageDown are handled by OutputBox internally  */
         }
     });
