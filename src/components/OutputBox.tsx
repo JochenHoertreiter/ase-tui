@@ -26,14 +26,14 @@ const COLOR = {
     heading2:   chalk.hex("#008FFF"),
     heading3:   chalk.blueBright,
     metaLabel:  chalk.hex("#FFA500"),
-    boldText:   chalk.hex("#FFA500"),
+    boldText:   chalk.white.bold,
     diffHeader: chalk.yellow.bold,
     diffHunk:   chalk.cyan,
     diffAdd:    chalk.green,
     diffRemove: chalk.red,
 
-    stringSingle:   chalk.white.bold,
-    stringBacktick: chalk.white.bold
+    stringSingle:   chalk.hex("#fffce2"),
+    stringBacktick: chalk.hex("#fffce2")
 }
 
 /* open string-literal state carried across lines: "" none, "'" single, "`" backtick */

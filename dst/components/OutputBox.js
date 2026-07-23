@@ -17,13 +17,13 @@ const COLOR = {
     heading2: chalk.hex("#008FFF"),
     heading3: chalk.blueBright,
     metaLabel: chalk.hex("#FFA500"),
-    boldText: chalk.hex("#FFA500"),
+    boldText: chalk.white.bold,
     diffHeader: chalk.yellow.bold,
     diffHunk: chalk.cyan,
     diffAdd: chalk.green,
     diffRemove: chalk.red,
-    stringSingle: chalk.white.bold,
-    stringBacktick: chalk.white.bold
+    stringSingle: chalk.hex("#fffce2"),
+    stringBacktick: chalk.hex("#fffce2")
 };
 /* colorize the string literals of one line, honoring the cross-line open state;
    only a lone backtick is a delimiter (```-runs are excluded and never colored),
