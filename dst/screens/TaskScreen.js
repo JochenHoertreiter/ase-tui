@@ -19,7 +19,7 @@ const TASK_ACTIONS = [
     { label: "Purge", value: "purge" }
 ];
 const errMsg = (err) => err instanceof Error ? err.message : String(err);
-const TaskScreen = ({ escBlockedRef, onHint, screenWidth, screenHeight }) => {
+const TaskScreen = ({ escBlockedRef, quitBlockedRef, onHint, screenWidth, screenHeight }) => {
     const [loading, setLoading] = useState(true);
     const [currentTask, setCurrentTask] = useState("");
     const [tasks, setTasks] = useState([]);
@@ -66,6 +66,11 @@ const TaskScreen = ({ escBlockedRef, onHint, screenWidth, screenHeight }) => {
         escBlockedRef.current = focus !== "tasks";
         return () => { escBlockedRef.current = false; };
     }, [focus, escBlockedRef]);
+    /*  sync quitBlockedRef so App's global q/Q quit is blocked only while typing  */
+    useEffect(() => {
+        quitBlockedRef.current = focus === "rename";
+        return () => { quitBlockedRef.current = false; };
+    }, [focus, quitBlockedRef]);
     /*  delegate focus-dependent hint text to the master hint bar  */
     useEffect(() => {
         if (focus === "rename")

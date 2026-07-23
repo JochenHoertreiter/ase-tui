@@ -18,10 +18,11 @@ import type { HintSegment }                           from "../components/HintBa
 type Focus = "tasks" | "actions" | "preview" | "rename"
 
 type Props = {
-    escBlockedRef: RefObject<boolean>
-    onHint:        (hint: HintSegment[] | null) => void
-    screenWidth:   number
-    screenHeight:  number
+    escBlockedRef:  RefObject<boolean>
+    quitBlockedRef: RefObject<boolean>
+    onHint:         (hint: HintSegment[] | null) => void
+    screenWidth:    number
+    screenHeight:   number
 }
 
 const TASK_ACTIONS: ActionItem[] = [
@@ -34,7 +35,7 @@ const TASK_ACTIONS: ActionItem[] = [
 const errMsg = (err: unknown): string =>
     err instanceof Error ? err.message : String(err)
 
-const TaskScreen = ({ escBlockedRef, onHint, screenWidth, screenHeight }: Props) => {
+const TaskScreen = ({ escBlockedRef, quitBlockedRef, onHint, screenWidth, screenHeight }: Props) => {
     const [ loading,        setLoading        ] = useState(true)
     const [ currentTask,    setCurrentTask    ] = useState("")
     const [ tasks,          setTasks          ] = useState<Array<{ label: string, value: string }>>([])
@@ -82,6 +83,12 @@ const TaskScreen = ({ escBlockedRef, onHint, screenWidth, screenHeight }: Props)
         escBlockedRef.current = focus !== "tasks"
         return () => { escBlockedRef.current = false }
     }, [ focus, escBlockedRef ])
+
+    /*  sync quitBlockedRef so App's global q/Q quit is blocked only while typing  */
+    useEffect(() => {
+        quitBlockedRef.current = focus === "rename"
+        return () => { quitBlockedRef.current = false }
+    }, [ focus, quitBlockedRef ])
 
     /*  delegate focus-dependent hint text to the master hint bar  */
     useEffect(() => {

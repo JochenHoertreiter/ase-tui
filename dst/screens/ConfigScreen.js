@@ -59,7 +59,7 @@ const pad = (s, w) => s.length >= w ? s.slice(0, w) : s + " ".repeat(w - s.lengt
 const scopeColor = (scope) => scope === "Project" ? "green" :
     scope === "User" ? "blue" :
         "gray";
-const ConfigScreen = ({ escBlockedRef, onHint, screenWidth, screenHeight }) => {
+const ConfigScreen = ({ escBlockedRef, quitBlockedRef, onHint, screenWidth, screenHeight }) => {
     const [loading, setLoading] = useState(true);
     const [rows, setRows] = useState([]);
     const [error, setError] = useState("");
@@ -115,6 +115,11 @@ const ConfigScreen = ({ escBlockedRef, onHint, screenWidth, screenHeight }) => {
         escBlockedRef.current = mode !== "view";
         return () => { escBlockedRef.current = false; };
     }, [mode, escBlockedRef]);
+    /*  sync quitBlockedRef so App's global q/Q quit is blocked only while typing  */
+    useEffect(() => {
+        quitBlockedRef.current = mode === "edit";
+        return () => { quitBlockedRef.current = false; };
+    }, [mode, quitBlockedRef]);
     /*  delegate mode-dependent hint text to the master hint bar  */
     useEffect(() => {
         if (mode === "edit")

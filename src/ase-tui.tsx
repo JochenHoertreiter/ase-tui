@@ -55,7 +55,8 @@ const baseHint = (escQuits: boolean): HintSegment[] => [
 const App = () => {
     const { exit }      = useApp()
     const { stdout }    = useStdout()
-    const escBlockedRef = useRef(false)
+    const escBlockedRef  = useRef(false)
+    const quitBlockedRef = useRef(false)
     const [ tab,  setTab  ] = useState(0)
     const [ hint, setHint ] = useState(() => baseHint(true))
 
@@ -73,7 +74,9 @@ const App = () => {
     const contentH = screenH + HINT_LINES
 
     useInput((input, key) => {
-        if ((input === "q" || input === "Q" || key.escape) && !escBlockedRef.current)
+        if ((input === "q" || input === "Q") && !quitBlockedRef.current)
+            exit()
+        else if (key.escape && !escBlockedRef.current)
             exit()
         else if (key.leftArrow) {
             setTab((t) => (t - 1 + tabs.length) % tabs.length)
@@ -123,9 +126,9 @@ const App = () => {
                 </Box>
             </Box>
             <Box height={contentH}>
-                {screen === "config"  && <ConfigScreen escBlockedRef={escBlockedRef} onHint={onHintCb} screenWidth={screenW} screenHeight={screenH} />}
+                {screen === "config"  && <ConfigScreen escBlockedRef={escBlockedRef} quitBlockedRef={quitBlockedRef} onHint={onHintCb} screenWidth={screenW} screenHeight={screenH} />}
                 {screen === "service" && <ServiceScreen escBlockedRef={escBlockedRef} onHint={onHintCb} screenWidth={screenW} screenHeight={screenH} />}
-                {screen === "task"    && <TaskScreen escBlockedRef={escBlockedRef} onHint={onHintCb} screenWidth={screenW} screenHeight={screenH} />}
+                {screen === "task"    && <TaskScreen escBlockedRef={escBlockedRef} quitBlockedRef={quitBlockedRef} onHint={onHintCb} screenWidth={screenW} screenHeight={screenH} />}
                 {screen === "setup"   && <SetupScreen escBlockedRef={escBlockedRef} onHint={onHintCb} screenWidth={screenW} screenHeight={screenH} />}
                 {screen === "mcp"     && <MCPScreen escBlockedRef={escBlockedRef} onHint={onHintCb} screenWidth={screenW} screenHeight={screenH} />}
             </Box>

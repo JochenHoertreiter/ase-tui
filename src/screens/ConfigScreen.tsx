@@ -81,13 +81,14 @@ const scopeColor = (scope: string): string =>
 type ConfigMode = "view" | "edit" | "preset" | "output"
 
 type Props = {
-    escBlockedRef: RefObject<boolean>
-    onHint:        (hint: HintSegment[] | null) => void
-    screenWidth:   number
-    screenHeight:  number
+    escBlockedRef:  RefObject<boolean>
+    quitBlockedRef: RefObject<boolean>
+    onHint:         (hint: HintSegment[] | null) => void
+    screenWidth:    number
+    screenHeight:   number
 }
 
-const ConfigScreen = ({ escBlockedRef, onHint, screenWidth, screenHeight }: Props) => {
+const ConfigScreen = ({ escBlockedRef, quitBlockedRef, onHint, screenWidth, screenHeight }: Props) => {
     const [ loading,     setLoading     ] = useState(true)
     const [ rows,        setRows        ] = useState<ConfigRow[]>([])
     const [ error,       setError       ] = useState("")
@@ -146,6 +147,12 @@ const ConfigScreen = ({ escBlockedRef, onHint, screenWidth, screenHeight }: Prop
         escBlockedRef.current = mode !== "view"
         return () => { escBlockedRef.current = false }
     }, [ mode, escBlockedRef ])
+
+    /*  sync quitBlockedRef so App's global q/Q quit is blocked only while typing  */
+    useEffect(() => {
+        quitBlockedRef.current = mode === "edit"
+        return () => { quitBlockedRef.current = false }
+    }, [ mode, quitBlockedRef ])
 
     /*  delegate mode-dependent hint text to the master hint bar  */
     useEffect(() => {
