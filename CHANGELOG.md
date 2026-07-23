@@ -1,5 +1,13 @@
 # ChangeLog
 
+## 0.0.7 (2026-07-23)
+
+-   FEATURE:     colorize `OutputBox` text for Markdown headings and git-diff readability
+-   FEATURE:     reload `TaskScreen` preview by pressing `p` again while in preview focus
+-   IMPROVEMENT: add focusable scrollable output pane across Service, Config and MCP screens
+-   IMPROVEMENT: pivot Config table to KEY|SCOPE|VALUE with dynamic widths and per-scope colors
+-   BUGFIX:      pressing `q` did not quit while in `TaskScreen` preview mode
+
 ## 0.0.6 (2026-06-03)
 
 -   FEATURE:     make `SelectList` scrollable with a windowed view and scrollbar when items exceed available height
