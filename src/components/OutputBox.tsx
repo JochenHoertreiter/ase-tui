@@ -26,6 +26,7 @@ const COLOR = {
     heading2:   chalk.hex("#008FFF"),
     heading3:   chalk.blueBright,
     metaLabel:  chalk.hex("#FFA500"),
+    metaValue:  chalk.white,
     boldText:   chalk.white.bold,
     diffHeader: chalk.yellow.bold,
     diffHunk:   chalk.cyan,
@@ -106,7 +107,7 @@ const colorStringLiterals = (line: string, open: Open): {
 }
 
 /* colorize one raw markdown line (outside any ```text fence) with ANSI colors;
-   priority: heading > created/modified > bold-text; markdown colors are kept
+   priority: heading > bold-text; markdown colors are kept
    disjoint from the git-diff colors (green/red/cyan/yellow) */
 const colorMarkdownLine = (line: string, open: Open): {
     text: string,
@@ -121,11 +122,6 @@ const colorMarkdownLine = (line: string, open: Open): {
             return {text: COLOR.heading2(line), open}
         return {text: COLOR.heading3(line), open}
     }
-
-    /* created/modified: label part magenta, timestamp value dimmed */
-    const meta = /^([⎈⚙]\s*\w+:)(.*)$/.exec(line)
-    if (meta !== null)
-        return {text: COLOR.metaLabel(meta[1]) + meta[2], open}
 
     /* bold text has precedence over string literals: keep each **…** span as-is
        and colorize string literals only on the plain segments between the spans */
@@ -144,35 +140,50 @@ const colorMarkdownLine = (line: string, open: Open): {
     return {text: out + tail.text, open: tail.open}
 }
 
-/* colorize one raw line with git-diff ANSI colors and track the surrounding
-   ```text fence state; diff coloring is active only inside such a fence,
-   markdown coloring only outside it, and the fence marker lines stay uncolored */
-const classifyDiffLine = (line: string, inDiff: boolean, open: Open): {
+/* colorize one raw line with git-diff ANSI colors and track both the surrounding
+   ```text fence state and the leading YAML frontmatter block; diff coloring is
+   active only inside such a fence, markdown coloring only outside it, and the
+   fence markers as well as the frontmatter delimiters stay uncolored */
+const classifyDiffLine = (line: string, idx: number, inDiff: boolean, inMeta: boolean, open: Open): {
     text: string,
     inDiff: boolean,
+    inMeta: boolean,
     open: Open
 } => {
+    /* frontmatter: opened by a --- on the very first line, closed by the next ---;
+       both delimiters stay uncolored, so the rendered text equals the raw text */
+    if (line === "---" && !inDiff && (inMeta || idx === 0))
+        return {text: line, inDiff, inMeta: !inMeta, open}
+
+    /* inside the frontmatter: key incl. colon orange, padding and value white */
+    if (inMeta) {
+        const meta = /^(\w+:)(.*)$/.exec(line)
+        if (meta !== null)
+            return {text: COLOR.metaLabel(meta[1]) + COLOR.metaValue(meta[2]), inDiff, inMeta, open}
+        return {text: line, inDiff, inMeta, open}
+    }
+
     /* toggle fence state on ``` markers at column 0 only; an indented ``` is no
        fence switch (it is treated as a normal markdown line further below) */
     if (line.startsWith("```")) {
         const opening = /^```+\s*text\b/.test(line)
-        return {text: line, inDiff: inDiff ? false : opening, open}
+        return {text: line, inDiff: inDiff ? false : opening, inMeta, open}
     }
     if (!inDiff) {
         const md = colorMarkdownLine(line, open)
-        return {text: md.text, inDiff, open: md.open}
+        return {text: md.text, inDiff, inMeta, open: md.open}
     }
 
     /* file headers take precedence over the +/- add/remove rules */
     if (line.startsWith("diff --git") || line.startsWith("+++ ") || line.startsWith("--- "))
-        return {text: COLOR.diffHeader(line), inDiff, open}
+        return {text: COLOR.diffHeader(line), inDiff, inMeta, open}
     else if (line.startsWith("@@"))
-        return {text: COLOR.diffHunk(line), inDiff, open}
+        return {text: COLOR.diffHunk(line), inDiff, inMeta, open}
     else if (line.startsWith("+"))
-        return {text: COLOR.diffAdd(line), inDiff, open}
+        return {text: COLOR.diffAdd(line), inDiff, inMeta, open}
     else if (line.startsWith("-"))
-        return {text: COLOR.diffRemove(line), inDiff, open}
-    return {text: line, inDiff, open}
+        return {text: COLOR.diffRemove(line), inDiff, inMeta, open}
+    return {text: line, inDiff, inMeta, open}
 }
 
 const OutputBox = ({lines, active, maxVisible, contentWidth, borderColor = "cyan"}: Props) => {
@@ -193,10 +204,12 @@ const OutputBox = ({lines, active, maxVisible, contentWidth, borderColor = "cyan
             cont: boolean
         }[]            = []
         let inDiff     = false
+        let inMeta     = false
         let open: Open = ""
         lines.forEach((line, idx) => {
-            const cls  = classifyDiffLine(line, inDiff, open)
+            const cls  = classifyDiffLine(line, idx, inDiff, inMeta, open)
             inDiff     = cls.inDiff
+            inMeta     = cls.inMeta
             open       = cls.open
             const segs = wrapAnsi(cls.text, innerW, {hard: true, trim: false, wordWrap: false}).split("\n")
             segs.forEach((seg, si) =>

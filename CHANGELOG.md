@@ -7,6 +7,7 @@
 -   IMPROVEMENT: add focusable scrollable output pane across Service, Config and MCP screens
 -   IMPROVEMENT: pivot Config table to KEY|SCOPE|VALUE with dynamic widths and per-scope colors
 -   BUGFIX:      pressing `q` did not quit while in `TaskScreen` preview mode
+-   BUGFIX:      colorize YAML frontmatter keys in `OutputBox` again after `ase task load` output change
 
 ## 0.0.6 (2026-06-03)
 
