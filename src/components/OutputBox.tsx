@@ -42,7 +42,8 @@ type Open = "" | "'" | "`"
 
 /* colorize the string literals of one line, honoring the cross-line open state;
    only a lone backtick is a delimiter (```-runs are excluded and never colored),
-   empty literals are ignored, and an unclosed opening quote sets the returned state */
+   a single quote glued to a word is an apostrophe and no delimiter, empty literals
+   are ignored, and only an unclosed backtick sets the returned state */
 const colorStringLiterals = (line: string, open: Open): {
     text: string,
     open: Open
@@ -50,8 +51,12 @@ const colorStringLiterals = (line: string, open: Open): {
     const styler = (q: Open): typeof COLOR.stringSingle =>
         q === "'" ? COLOR.stringSingle : COLOR.stringBacktick
 
+    /* letters and digits of any script, so "Größe's" behaves like "Grid's" */
+    const isWord = (c: string | undefined): boolean =>
+        c !== undefined && /[\p{L}\p{N}]/u.test(c)
+
     /* a backtick is a delimiter only when standing alone (not part of a ``` run) */
-    const isDelim = (q: Open, i: number): boolean => {
+    const isDelim = (q: Open, i: number, opening: boolean): boolean => {
         if (line[i] !== q)
             return false
 
@@ -64,13 +69,16 @@ const colorStringLiterals = (line: string, open: Open): {
 
         if (q === "`")
             return line[i - 1] !== "`" && line[i + 1] !== "`"
-        return true
+
+        /* a single quote glued to a word is an apostrophe: it opens nothing when a word
+           precedes it and closes nothing when a word follows it */
+        return opening ? !isWord(line[i - 1]) : !isWord(line[i + 1])
     }
 
     /* continue an open literal: color up to its closing delimiter, else the whole line */
     if (open !== "") {
         for (let i = 0; i < line.length; i++)
-            if (isDelim(open, i)) {
+            if (isDelim(open, i, false)) {
                 const rest = colorStringLiterals(line.slice(i + 1), "")
                 return {text: styler(open)(line.slice(0, i + 1)) + rest.text, open: rest.open}
             }
@@ -82,20 +90,21 @@ const colorStringLiterals = (line: string, open: Open): {
     let i   = 0
     while (i < line.length) {
         const q: Open = line[i] === "'" ? "'" : line[i] === "`" ? "`" : ""
-        if (q !== "" && isDelim(q, i)) {
+        if (q !== "" && isDelim(q, i, true)) {
 
             /* find matching closing delimiter with at least one content character */
             let j = i + 1
-            while (j < line.length && !(j > i + 1 && isDelim(q, j)))
+            while (j < line.length && !(j > i + 1 && isDelim(q, j, false)))
                 j++
-            if (j < line.length && isDelim(q, j)) {
+            if (j < line.length && isDelim(q, j, false)) {
                 out += styler(q)(line.slice(i, j + 1))
                 i = j + 1
                 continue
             }
 
-            /* no closing delimiter but content follows: open literal until a later line */
-            if (i + 1 < line.length) {
+            /* no closing delimiter but content follows: only a backtick may open a literal
+               spanning lines, a lone single quote is emitted verbatim instead */
+            if (q === "`" && i + 1 < line.length) {
                 out += styler(q)(line.slice(i))
                 return {text: out, open: q}
             }

@@ -4,6 +4,7 @@
 
 -   FEATURE:     show the startup working directory name as `[<name>]` right of the TUI header title
 -   BUGFIX:      colorize YAML frontmatter keys in `OutputBox` again after `ase task load` output change
+-   BUGFIX:      an in-word apostrophe like `Grid's` no longer opens a never-closing string literal in `OutputBox`
 -   BUGFIX:      read every task plan in `TaskScreen` via `ase task list --exclude none` after the CLI gained a default exclusion
 
 ## 0.0.7 (2026-07-23)
