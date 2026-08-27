@@ -19,6 +19,12 @@ const TASK_ACTIONS = [
     { label: "Purge", value: "purge" }
 ];
 const errMsg = (err) => err instanceof Error ? err.message : String(err);
+/*  read the complete task id list, as `ase task list` excludes
+    the COMPLETED and CANCELLED task plans by default  */
+const loadTaskIds = async () => {
+    const res = await execa("ase", ["task", "list", "--exclude", "none"]);
+    return res.stdout.trim().split("\n").filter(Boolean);
+};
 const TaskScreen = ({ escBlockedRef, quitBlockedRef, onHint, screenWidth, screenHeight }) => {
     const [loading, setLoading] = useState(true);
     const [currentTask, setCurrentTask] = useState("");
@@ -38,11 +44,10 @@ const TaskScreen = ({ escBlockedRef, quitBlockedRef, onHint, screenWidth, screen
         let cancelled = false;
         const load = async () => {
             try {
-                const [idRes, listRes] = await Promise.all([
+                const [idRes, ids] = await Promise.all([
                     execa("ase", ["config", "get", "agent.task"]),
-                    execa("ase", ["task", "list"])
+                    loadTaskIds()
                 ]);
-                const ids = listRes.stdout.trim().split("\n").filter(Boolean);
                 if (!cancelled) {
                     setCurrentTask(idRes.stdout.trim());
                     setTasks(ids.map((id) => ({ label: id, value: id })));
@@ -186,8 +191,7 @@ const TaskScreen = ({ escBlockedRef, quitBlockedRef, onHint, screenWidth, screen
                 await runCommand(["task", "purge"], (line) => {
                     setOutput((prev) => [...prev, line]);
                 });
-                const listRes = await execa("ase", ["task", "list"]);
-                const ids = listRes.stdout.trim().split("\n").filter(Boolean);
+                const ids = await loadTaskIds();
                 setTasks(ids.map((id2) => ({ label: id2, value: id2 })));
                 setSelected((s) => Math.min(s, Math.max(0, ids.length - 1)));
                 setPreview([]);
