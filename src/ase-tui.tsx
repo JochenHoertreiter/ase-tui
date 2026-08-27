@@ -46,6 +46,9 @@ const tabs: Array<{ label: string, value: Screen }> = [
 
 const TITLE = "⧉ ASE — Agentic Software Engineering - Terminal User Interface (tui)"
 
+/* the startup working directory identifies the project the TUI operates on */
+const CWD_NAME = process.cwd()
+
 /* base hints; the quit key also includes ESC when no screen handles ESC itself */
 const baseHint = (escQuits: boolean): HintSegment[] => [
     { key: "← →",                    desc: "navigate tabs" },
@@ -91,6 +94,10 @@ const App = () => {
     /* available width inside paddingLeft={1} container */
     const innerW = Math.max(1, termW - 1)
 
+    /* reserve the right-hand cwd label plus its gap before truncating the title */
+    const cwdLabel = `[${CWD_NAME}]`
+    const titleW   = Math.max(1, innerW - cwdLabel.length - 2)
+
     const screen = tabs[tab].value
 
     /* each tab occupies: 1 (left border) + 1 (paddingLeft) + label + 1 (paddingRight) + 1 (right border) */
@@ -108,8 +115,10 @@ const App = () => {
 
     return (
         <Box flexDirection='column' width={termW} height={termH}>
-            <Box paddingLeft={1}>
-                <Text bold color='cyan'>{cliTruncate(TITLE, innerW)}</Text>
+            <Box width={termW} paddingLeft={1} paddingRight={1}>
+                <Text bold color='cyan'>{cliTruncate(TITLE, titleW)}</Text>
+                <Box flexGrow={1} />
+                <Text color='gray'>{cwdLabel}</Text>
             </Box>
             <Box flexDirection='row' paddingLeft={1}>
                 {tabs.map((t, i) =>

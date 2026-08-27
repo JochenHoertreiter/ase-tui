@@ -36,6 +36,8 @@ const tabs = [
     { label: "MCP", value: "mcp" }
 ];
 const TITLE = "⧉ ASE — Agentic Software Engineering - Terminal User Interface (tui)";
+/* the startup working directory identifies the project the TUI operates on */
+const CWD_NAME = process.cwd();
 /* base hints; the quit key also includes ESC when no screen handles ESC itself */
 const baseHint = (escQuits) => [
     { key: "← →", desc: "navigate tabs" },
@@ -74,6 +76,9 @@ const App = () => {
     });
     /* available width inside paddingLeft={1} container */
     const innerW = Math.max(1, termW - 1);
+    /* reserve the right-hand cwd label plus its gap before truncating the title */
+    const cwdLabel = `[${CWD_NAME}]`;
+    const titleW = Math.max(1, innerW - cwdLabel.length - 2);
     const screen = tabs[tab].value;
     /* each tab occupies: 1 (left border) + 1 (paddingLeft) + label + 1 (paddingRight) + 1 (right border) */
     const tabsWidth = 1 + tabs.reduce((sum, t) => sum + t.label.length + 4, 0);
@@ -83,7 +88,7 @@ const App = () => {
         const base = baseHint(!escBlockedRef.current);
         setHint(s ? [...s, ...base] : base);
     }, [setHint]);
-    return (_jsxs(Box, { flexDirection: 'column', width: termW, height: termH, children: [_jsx(Box, { paddingLeft: 1, children: _jsx(Text, { bold: true, color: 'cyan', children: cliTruncate(TITLE, innerW) }) }), _jsxs(Box, { flexDirection: 'row', paddingLeft: 1, children: [tabs.map((t, i) => i === tab ?
+    return (_jsxs(Box, { flexDirection: 'column', width: termW, height: termH, children: [_jsxs(Box, { width: termW, paddingLeft: 1, paddingRight: 1, children: [_jsx(Text, { bold: true, color: 'cyan', children: cliTruncate(TITLE, titleW) }), _jsx(Box, { flexGrow: 1 }), _jsx(Text, { color: 'gray', children: cwdLabel })] }), _jsxs(Box, { flexDirection: 'row', paddingLeft: 1, children: [tabs.map((t, i) => i === tab ?
                         _jsx(Box, { borderStyle: BORDER_ACTIVE, borderColor: 'gray', paddingLeft: 1, paddingRight: 1, children: _jsx(Text, { color: 'cyan', children: t.label }) }, t.value) :
                         _jsx(Box, { borderStyle: BORDER_INACTIVE, borderColor: 'gray', paddingLeft: 1, paddingRight: 1, children: _jsx(Text, { color: 'gray', children: t.label }) }, t.value)), _jsx(Box, { alignSelf: 'flex-end', children: _jsx(Text, { color: 'gray', children: "─".repeat(restW) }) })] }), _jsxs(Box, { height: contentH, children: [screen === "config" && _jsx(ConfigScreen, { escBlockedRef: escBlockedRef, quitBlockedRef: quitBlockedRef, onHint: onHintCb, screenWidth: screenW, screenHeight: screenH }), screen === "service" && _jsx(ServiceScreen, { escBlockedRef: escBlockedRef, onHint: onHintCb, screenWidth: screenW, screenHeight: screenH }), screen === "task" && _jsx(TaskScreen, { escBlockedRef: escBlockedRef, quitBlockedRef: quitBlockedRef, onHint: onHintCb, screenWidth: screenW, screenHeight: screenH }), screen === "setup" && _jsx(SetupScreen, { escBlockedRef: escBlockedRef, onHint: onHintCb, screenWidth: screenW, screenHeight: screenH }), screen === "mcp" && _jsx(MCPScreen, { escBlockedRef: escBlockedRef, onHint: onHintCb, screenWidth: screenW, screenHeight: screenH })] }), _jsx(HintBar, { hint: hint, width: termW })] }));
 };
