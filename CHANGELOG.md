@@ -3,8 +3,8 @@
 ## 0.0.9 (2026-09-09)
 
 -   FEATURE:     show the startup working directory name as `[<name>]` right of the TUI header title
--   FEATURE:     show the package version from `package.json` as `(ase-tui v<version>)` in the TUI header title
--   FEATURE:     select the target tool per Setup command via a second list column
+-   FEATURE:     show the package version from `package.json` as `v<version>` in cyan right of the TUI header working directory name
+-   FEATURE:     select the Setup command per target tool via a leading `Tools` list column
 -   BUGFIX:      an in-word apostrophe like `Grid's` no longer opens a never-closing string literal in `OutputBox`
 
 ## 0.0.8 (2026-08-27)

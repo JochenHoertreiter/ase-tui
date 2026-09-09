@@ -15,19 +15,19 @@ import MCPScreen from "./screens/MCPScreen.js";
 import HintBar from "./components/HintBar.js";
 import pkg from "../package.json" with { type: "json" };
 /* fixed line counts for layout budgeting */
-const HEADER_LINES = 5; /* 1 title + 3 tab-bar (border+content+border) + 1 padding */
-const HINT_LINES = 1; /* 1 hint bar at bottom */
-const SCREEN_PAD_H = 2; /* padding={1} inside each screen = 1 left + 1 right */
+const HEADER_LINES = 5; // 1 title + 3 tab-bar (border+content+border) + 1 padding
+const HINT_LINES = 1; // 1 hint bar at bottom
+const SCREEN_PAD_H = 2; // padding={1} inside each screen = 1 left + 1 right
 /* tab border styles */
 const BORDER_ACTIVE = {
     topLeft: "╭", top: "─", topRight: "╮",
-    bottomLeft: "╯", bottom: " ", bottomRight: "╰",
-    left: "│", right: "│"
+    left: "│", right: "│",
+    bottomLeft: "╯", bottom: " ", bottomRight: "╰"
 };
 const BORDER_INACTIVE = {
     topLeft: "╭", top: "─", topRight: "╮",
-    bottomLeft: "┴", bottom: "─", bottomRight: "┴",
-    left: "│", right: "│"
+    left: "│", right: "│",
+    bottomLeft: "┴", bottom: "─", bottomRight: "┴"
 };
 const tabs = [
     { label: "Config", value: "config" },
@@ -36,9 +36,9 @@ const tabs = [
     { label: "Setup", value: "setup" },
     { label: "MCP", value: "mcp" }
 ];
-const TITLE = `⧉ ASE — Agentic Software Engineering - Terminal User Interface (ase-tui v${pkg.version})`;
-/* the startup working directory identifies the project the TUI operates on */
+const TITLE = "⧉ ASE — Agentic Software Engineering - Terminal User Interface (ase-tui)";
 const CWD_NAME = process.cwd();
+const VERSION = `v${pkg.version}`;
 /* base hints; the quit key also includes ESC when no screen handles ESC itself */
 const baseHint = (escQuits) => [
     { key: "← →", desc: "navigate tabs" },
@@ -77,9 +77,9 @@ const App = () => {
     });
     /* available width inside paddingLeft={1} container */
     const innerW = Math.max(1, termW - 1);
-    /* reserve the right-hand cwd label plus its gap before truncating the title */
+    /* reserve the right-hand cwd and version labels plus their gaps before truncating the title */
     const cwdLabel = `[${CWD_NAME}]`;
-    const titleW = Math.max(1, innerW - cwdLabel.length - 2);
+    const titleW = Math.max(1, innerW - cwdLabel.length - VERSION.length - 3);
     const screen = tabs[tab].value;
     /* each tab occupies: 1 (left border) + 1 (paddingLeft) + label + 1 (paddingRight) + 1 (right border) */
     const tabsWidth = 1 + tabs.reduce((sum, t) => sum + t.label.length + 4, 0);
@@ -89,7 +89,7 @@ const App = () => {
         const base = baseHint(!escBlockedRef.current);
         setHint(s ? [...s, ...base] : base);
     }, [setHint]);
-    return (_jsxs(Box, { flexDirection: 'column', width: termW, height: termH, children: [_jsxs(Box, { width: termW, paddingLeft: 1, paddingRight: 1, children: [_jsx(Text, { bold: true, color: 'cyan', children: cliTruncate(TITLE, titleW) }), _jsx(Box, { flexGrow: 1 }), _jsx(Text, { color: 'gray', children: cwdLabel })] }), _jsxs(Box, { flexDirection: 'row', paddingLeft: 1, children: [tabs.map((t, i) => i === tab ?
+    return (_jsxs(Box, { flexDirection: 'column', width: termW, height: termH, children: [_jsxs(Box, { width: termW, paddingLeft: 1, paddingRight: 1, children: [_jsx(Text, { bold: true, color: 'cyan', children: cliTruncate(TITLE, titleW) }), _jsx(Box, { flexGrow: 1 }), _jsx(Text, { color: 'gray', children: cwdLabel }), _jsx(Text, { bold: true, color: 'cyan', children: ` ${VERSION}` })] }), _jsxs(Box, { flexDirection: 'row', paddingLeft: 1, children: [tabs.map((t, i) => i === tab ?
                         _jsx(Box, { borderStyle: BORDER_ACTIVE, borderColor: 'gray', paddingLeft: 1, paddingRight: 1, children: _jsx(Text, { color: 'cyan', children: t.label }) }, t.value) :
                         _jsx(Box, { borderStyle: BORDER_INACTIVE, borderColor: 'gray', paddingLeft: 1, paddingRight: 1, children: _jsx(Text, { color: 'gray', children: t.label }) }, t.value)), _jsx(Box, { alignSelf: 'flex-end', children: _jsx(Text, { color: 'gray', children: "─".repeat(restW) }) })] }), _jsxs(Box, { height: contentH, children: [screen === "config" && _jsx(ConfigScreen, { escBlockedRef: escBlockedRef, quitBlockedRef: quitBlockedRef, onHint: onHintCb, screenWidth: screenW, screenHeight: screenH }), screen === "service" && _jsx(ServiceScreen, { escBlockedRef: escBlockedRef, onHint: onHintCb, screenWidth: screenW, screenHeight: screenH }), screen === "task" && _jsx(TaskScreen, { escBlockedRef: escBlockedRef, quitBlockedRef: quitBlockedRef, onHint: onHintCb, screenWidth: screenW, screenHeight: screenH }), screen === "setup" && _jsx(SetupScreen, { escBlockedRef: escBlockedRef, onHint: onHintCb, screenWidth: screenW, screenHeight: screenH }), screen === "mcp" && _jsx(MCPScreen, { escBlockedRef: escBlockedRef, onHint: onHintCb, screenWidth: screenW, screenHeight: screenH })] }), _jsx(HintBar, { hint: hint, width: termW })] }));
 };

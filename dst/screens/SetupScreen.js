@@ -34,7 +34,7 @@ const SetupScreen = ({ escBlockedRef, onHint, screenWidth, screenHeight }) => {
     const [running, setRunning] = useState(false);
     const [selected, setSelected] = useState(0);
     const [selectedTool, setSelectedTool] = useState(0);
-    const [focus, setFocus] = useState("commands");
+    const [focus, setFocus] = useState("tools");
     const [outputs, setOutputs] = useState({});
     const runningRef = useRef(false);
     /*  the tool list is derived from the CLI, so it never drifts from "ase setup install"  */
@@ -63,20 +63,20 @@ const SetupScreen = ({ escBlockedRef, onHint, screenWidth, screenHeight }) => {
     const lines = outputs[outputKey] ?? [];
     /*  sync escBlockedRef so App's global ESC handler knows when to block  */
     useEffect(() => {
-        escBlockedRef.current = focus !== "commands";
+        escBlockedRef.current = focus !== "tools";
         return () => { escBlockedRef.current = false; };
     }, [focus, escBlockedRef]);
     /*  delegate focus-dependent hint text to the master hint bar  */
     useEffect(() => {
-        if (focus === "commands")
-            onHint([
-                { key: "↑ ↓", desc: "navigate actions" },
-                { key: "⏎", desc: "select action" }
-            ]);
-        else if (focus === "tools")
+        if (focus === "tools")
             onHint([
                 { key: "↑ ↓", desc: "navigate tools" },
-                { key: "⏎", desc: "execute action" },
+                { key: "⏎", desc: "select tool" }
+            ]);
+        else if (focus === "commands")
+            onHint([
+                { key: "↑ ↓", desc: "navigate commands" },
+                { key: "⏎", desc: "execute command" },
                 { key: "o", desc: "output" },
                 { key: "ESC", desc: "back" }
             ]);
@@ -113,23 +113,21 @@ const SetupScreen = ({ escBlockedRef, onHint, screenWidth, screenHeight }) => {
     useInput((input, key) => {
         if (runningRef.current)
             return;
-        /*  focus: commands  */
-        if (focus === "commands") {
-            if (key.upArrow)
-                setSelected((s) => Math.max(0, s - 1));
-            else if (key.downArrow)
-                setSelected((s) => Math.min(actions.length - 1, s + 1));
-            else if (key.return && tools.length > 0)
-                setFocus("tools");
-        }
-        /*  focus: tools  */
-        else if (focus === "tools") {
+        if (focus === "tools") {
             if (key.upArrow)
                 setSelectedTool((t) => Math.max(0, t - 1));
             else if (key.downArrow)
                 setSelectedTool((t) => Math.min(tools.length - 1, t + 1));
-            else if (key.escape)
+            else if (key.return && tools.length > 0)
                 setFocus("commands");
+        }
+        else if (focus === "commands") {
+            if (key.upArrow)
+                setSelected((s) => Math.max(0, s - 1));
+            else if (key.downArrow)
+                setSelected((s) => Math.min(actions.length - 1, s + 1));
+            else if (key.escape)
+                setFocus("tools");
             else if (key.return) {
                 setFocus("output");
                 handleSelect(actions[selected], tools[selectedTool]).catch((e) => {
@@ -139,20 +137,19 @@ const SetupScreen = ({ escBlockedRef, onHint, screenWidth, screenHeight }) => {
             else if (input === "o")
                 setFocus("output");
         }
-        /*  focus: output  */
         else if (focus === "output") {
             if (key.escape)
-                setFocus("tools");
+                setFocus("commands");
             /*  ↑↓ and pageUp/pageDown are handled by OutputBox internally  */
         }
     });
-    /* left column: fixed width for action list */
-    const actionsW = 20;
+    /* left columns: fixed widths for tool and action list */
     const toolsW = 16;
-    const outputW = Math.max(1, screenWidth - actionsW - toolsW);
+    const actionsW = 20;
+    const outputW = Math.max(1, screenWidth - toolsW - actionsW);
     const outputH = Math.max(1, screenHeight - 1);
     return (_jsx(Box, { flexDirection: 'column', padding: 1, children: loading ?
             _jsxs(Text, { children: [_jsx(Spinner, { type: 'dots' }), " Loading tools..."] }) :
-            _jsxs(Box, { flexDirection: 'row', children: [_jsx(Box, { flexDirection: 'column', width: actionsW, children: _jsx(SelectList, { items: actions, selectedIndex: selected, isFocused: focus === "commands", header: 'Commands', maxVisible: outputH + 1 }) }), _jsx(Box, { flexDirection: 'column', width: toolsW, children: _jsx(SelectList, { items: tools, selectedIndex: selectedTool, isFocused: focus === "tools", header: 'Tool', maxVisible: outputH + 1, busyIndex: running ? selectedTool : undefined }) }), _jsxs(Box, { flexDirection: 'column', width: outputW, children: [_jsx(Text, { color: focus === "output" ? "cyan" : "gray", children: "Command output" }), _jsx(OutputBox, { lines: lines, active: focus === "output", maxVisible: outputH, contentWidth: outputW, borderColor: focus === "output" ? "cyan" : "gray" })] })] }) }));
+            _jsxs(Box, { flexDirection: 'row', children: [_jsx(Box, { flexDirection: 'column', width: toolsW, children: _jsx(SelectList, { items: tools, selectedIndex: selectedTool, isFocused: focus === "tools", header: 'Tools', maxVisible: outputH + 1 }) }), _jsx(Box, { flexDirection: 'column', width: actionsW, children: _jsx(SelectList, { items: actions, selectedIndex: selected, isFocused: focus === "commands", header: 'Commands', maxVisible: outputH + 1, busyIndex: running ? selected : undefined }) }), _jsxs(Box, { flexDirection: 'column', width: outputW, children: [_jsx(Text, { color: focus === "output" ? "cyan" : "gray", children: "Command output" }), _jsx(OutputBox, { lines: lines, active: focus === "output", maxVisible: outputH, contentWidth: outputW, borderColor: focus === "output" ? "cyan" : "gray" })] })] }) }));
 };
 export default SetupScreen;

@@ -25,7 +25,7 @@ const parseToolList = (stdout: string): ActionItem[] => {
     return [ ...head.matchAll(/"([^"]+)"/g) ].map((m) => ({ label: m[1], value: m[1] }))
 }
 
-type Focus = "commands" | "tools" | "output"
+type Focus = "tools" | "commands" | "output"
 
 const actions: ActionItem[] = [
     { label: "Install",   value: "install"   },
@@ -48,7 +48,7 @@ const SetupScreen = ({ escBlockedRef, onHint, screenWidth, screenHeight }: Props
     const [ running,      setRunning      ] = useState(false)
     const [ selected,     setSelected     ] = useState(0)
     const [ selectedTool, setSelectedTool ] = useState(0)
-    const [ focus,        setFocus        ] = useState<Focus>("commands")
+    const [ focus,        setFocus        ] = useState<Focus>("tools")
     const [ outputs,      setOutputs      ] = useState<Record<string, string[]>>({})
     const runningRef = useRef(false)
 
@@ -80,23 +80,23 @@ const SetupScreen = ({ escBlockedRef, onHint, screenWidth, screenHeight }: Props
 
     /*  sync escBlockedRef so App's global ESC handler knows when to block  */
     useEffect(() => {
-        escBlockedRef.current = focus !== "commands"
+        escBlockedRef.current = focus !== "tools"
         return () => { escBlockedRef.current = false }
     }, [ focus, escBlockedRef ])
 
     /*  delegate focus-dependent hint text to the master hint bar  */
     useEffect(() => {
-        if (focus === "commands")
-            onHint([
-                { key: "↑ ↓", desc: "navigate actions" },
-                { key: "⏎",   desc: "select action"    }
-            ])
-        else if (focus === "tools")
+        if (focus === "tools")
             onHint([
                 { key: "↑ ↓", desc: "navigate tools" },
-                { key: "⏎",   desc: "execute action" },
-                { key: "o",   desc: "output"         },
-                { key: "ESC", desc: "back"           }
+                { key: "⏎",   desc: "select tool"    }
+            ])
+        else if (focus === "commands")
+            onHint([
+                { key: "↑ ↓", desc: "navigate commands" },
+                { key: "⏎",   desc: "execute command"   },
+                { key: "o",   desc: "output"            },
+                { key: "ESC", desc: "back"              }
             ])
         else
             onHint([
@@ -133,23 +133,21 @@ const SetupScreen = ({ escBlockedRef, onHint, screenWidth, screenHeight }: Props
     useInput((input, key) => {
         if (runningRef.current)
             return
-        /*  focus: commands  */
-        if (focus === "commands") {
-            if (key.upArrow)
-                setSelected( (s) => Math.max(0, s - 1))
-            else if (key.downArrow)
-                setSelected((s) => Math.min(actions.length - 1, s + 1))
-            else if (key.return && tools.length > 0)
-                setFocus("tools")
-        }
-        /*  focus: tools  */
-        else if (focus === "tools") {
+        if (focus === "tools") {
             if (key.upArrow)
                 setSelectedTool((t) => Math.max(0, t - 1))
             else if (key.downArrow)
                 setSelectedTool((t) => Math.min(tools.length - 1, t + 1))
-            else if (key.escape)
+            else if (key.return && tools.length > 0)
                 setFocus("commands")
+        }
+        else if (focus === "commands") {
+            if (key.upArrow)
+                setSelected((s) => Math.max(0, s - 1))
+            else if (key.downArrow)
+                setSelected((s) => Math.min(actions.length - 1, s + 1))
+            else if (key.escape)
+                setFocus("tools")
             else if (key.return) {
                 setFocus("output")
                 handleSelect(actions[selected], tools[selectedTool]).catch((e) => {
@@ -159,18 +157,17 @@ const SetupScreen = ({ escBlockedRef, onHint, screenWidth, screenHeight }: Props
             else if (input === "o")
                 setFocus("output")
         }
-        /*  focus: output  */
         else if (focus === "output") {
             if (key.escape)
-                setFocus("tools")
+                setFocus("commands")
             /*  ↑↓ and pageUp/pageDown are handled by OutputBox internally  */
         }
     })
 
-    /* left column: fixed width for action list */
-    const actionsW = 20
+    /* left columns: fixed widths for tool and action list */
     const toolsW   = 16
-    const outputW  = Math.max(1, screenWidth  - actionsW - toolsW)
+    const actionsW = 20
+    const outputW  = Math.max(1, screenWidth  - toolsW - actionsW)
     const outputH  = Math.max(1, screenHeight - 1)
 
     return (
@@ -178,11 +175,11 @@ const SetupScreen = ({ escBlockedRef, onHint, screenWidth, screenHeight }: Props
             {loading ?
                 <Text><Spinner type='dots' /> Loading tools...</Text> :
                 <Box flexDirection='row'>
-                    <Box flexDirection='column' width={actionsW}>
-                        <SelectList items={actions} selectedIndex={selected} isFocused={focus === "commands"} header='Commands' maxVisible={outputH + 1} />
-                    </Box>
                     <Box flexDirection='column' width={toolsW}>
-                        <SelectList items={tools} selectedIndex={selectedTool} isFocused={focus === "tools"} header='Tool' maxVisible={outputH + 1} busyIndex={running ? selectedTool : undefined} />
+                        <SelectList items={tools} selectedIndex={selectedTool} isFocused={focus === "tools"} header='Tools' maxVisible={outputH + 1} />
+                    </Box>
+                    <Box flexDirection='column' width={actionsW}>
+                        <SelectList items={actions} selectedIndex={selected} isFocused={focus === "commands"} header='Commands' maxVisible={outputH + 1} busyIndex={running ? selected : undefined} />
                     </Box>
                     <Box flexDirection='column' width={outputW}>
                         <Text color={focus === "output" ? "cyan" : "gray"}>Command output</Text>
