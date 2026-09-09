@@ -13,6 +13,7 @@ import TaskScreen from "./screens/TaskScreen.js";
 import SetupScreen from "./screens/SetupScreen.js";
 import MCPScreen from "./screens/MCPScreen.js";
 import HintBar from "./components/HintBar.js";
+import pkg from "../package.json" with { type: "json" };
 /* fixed line counts for layout budgeting */
 const HEADER_LINES = 5; /* 1 title + 3 tab-bar (border+content+border) + 1 padding */
 const HINT_LINES = 1; /* 1 hint bar at bottom */
@@ -35,7 +36,7 @@ const tabs = [
     { label: "Setup", value: "setup" },
     { label: "MCP", value: "mcp" }
 ];
-const TITLE = "⧉ ASE — Agentic Software Engineering - Terminal User Interface (tui)";
+const TITLE = `⧉ ASE — Agentic Software Engineering - Terminal User Interface (ase-tui v${pkg.version})`;
 /* the startup working directory identifies the project the TUI operates on */
 const CWD_NAME = process.cwd();
 /* base hints; the quit key also includes ESC when no screen handles ESC itself */

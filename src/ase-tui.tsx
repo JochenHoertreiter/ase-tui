@@ -16,6 +16,8 @@ import SetupScreen   from "./screens/SetupScreen.js"
 import MCPScreen     from "./screens/MCPScreen.js"
 import HintBar, { type HintSegment } from "./components/HintBar.js"
 
+import pkg from "../package.json" with { type: "json" }
+
 /* fixed line counts for layout budgeting */
 const HEADER_LINES = 5  /* 1 title + 3 tab-bar (border+content+border) + 1 padding */
 const HINT_LINES   = 1  /* 1 hint bar at bottom */
@@ -44,7 +46,7 @@ const tabs: Array<{ label: string, value: Screen }> = [
 ]
 
 
-const TITLE = "⧉ ASE — Agentic Software Engineering - Terminal User Interface (tui)"
+const TITLE = `⧉ ASE — Agentic Software Engineering - Terminal User Interface (ase-tui v${pkg.version})`
 
 /* the startup working directory identifies the project the TUI operates on */
 const CWD_NAME = process.cwd()

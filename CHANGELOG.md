@@ -1,10 +1,14 @@
 # ChangeLog
 
-## 0.0.8 (2026-08-27)
+## 0.0.9 (2026-09-09)
 
 -   FEATURE:     show the startup working directory name as `[<name>]` right of the TUI header title
--   BUGFIX:      colorize YAML frontmatter keys in `OutputBox` again after `ase task load` output change
+-   FEATURE:     show the package version from `package.json` as `(ase-tui v<version>)` in the TUI header title
 -   BUGFIX:      an in-word apostrophe like `Grid's` no longer opens a never-closing string literal in `OutputBox`
+
+## 0.0.8 (2026-08-27)
+
+-   BUGFIX:      colorize YAML frontmatter keys in `OutputBox` again after `ase task load` output change
 -   BUGFIX:      read every task plan in `TaskScreen` via `ase task list --exclude none` after the CLI gained a default exclusion
 
 ## 0.0.7 (2026-07-23)
